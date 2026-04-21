@@ -22,7 +22,7 @@ The **Smart Parking System** automates the detection, reservation, and managemen
 ### System Architecture
 
 ```
-[HC-SR04 Sensors] ──► [Arduino UNO] ──► USB Serial ──► [Flask Backend]
+[HC-SR04 Sensors] ──► [Arduino UNO] ──► USB Serial ──► [Django Backend]
                        [Servo Motors] ◄──                      │
                        [LEDs per spot]                         ▼
                                                          [MySQL Database]
@@ -47,8 +47,24 @@ The **Smart Parking System** automates the detection, reservation, and managemen
 SmartParking/
 ├── arduino/
 ├── backend/
+├── ├── core/
+      ├──__pycache__/
+      ├──__init__.py
+      ├──asgi.py
+      ├──setting.py
+      ├──urls.py
+      ├──wsgi.py
+    ├──parking/
+      ├──migrations/
+      ├──__init__.py
+      ├──admin.py
+      ├──apps.py
+      ├──models.py
+      ├──tests.py
+      ├──views.py
 │   ├── test_serial.py          # test serial arduino with flask
 │   ├── requirements.txt        # Python dependencies
+|   ├──manage.py
 ├── frontend/
 │  
 ├── sql/ # Database schema & seed data
@@ -131,7 +147,13 @@ pip install -r requirements.txt
 
 
 
-Start the Flask server:
+Start the Django server:
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver
+```
+
 
 ```bash
 python app.py
