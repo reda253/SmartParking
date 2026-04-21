@@ -129,7 +129,7 @@ cd SmartParking
 ```
 
 
-### 2. Backend (Flask)
+### 2. Backend (Django)
 
 ```bash
 cd backend
