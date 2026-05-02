@@ -1,0 +1,1803 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ParkSense — Smart Parking Intelligent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --blue-50: #EFF6FF;
+      --blue-100: #DBEAFE;
+      --blue-200: #BFDBFE;
+      --blue-500: #3B82F6;
+      --blue-600: #2563EB;
+      --blue-700: #1D4ED8;
+      --blue-900: #1E3A8A;
+      --ink-900: #0F172A;
+      --ink-800: #1E293B;
+      --ink-700: #334155;
+      --ink-600: #475569;
+      --ink-500: #64748B;
+      --ink-400: #94A3B8;
+      --ink-300: #CBD5E1;
+      --ink-200: #E2E8F0;
+      --ink-100: #F1F5F9;
+      --ink-50: #F8FAFC;
+      --green-50: #ECFDF5;
+      --green-100: #D1FAE5;
+      --green-500: #10B981;
+      --green-600: #059669;
+      --green-700: #047857;
+      --amber-50: #FFFBEB;
+      --amber-500: #F59E0B;
+      --amber-600: #D97706;
+      --red-50: #FEF2F2;
+      --red-100: #FEE2E2;
+      --red-500: #EF4444;
+      --red-600: #DC2626;
+      --orange-500: #F97316;
+      --bg: #F0F4F9;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, .06);
+      --shadow-md: 0 4px 16px rgba(15, 23, 42, .08);
+      --shadow-lg: 0 12px 40px rgba(15, 23, 42, .1);
+      --shadow-glow: 0 8px 24px rgba(37, 99, 235, .22);
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 18px;
+      --r-xl: 24px;
+    }
+
+    html,
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink-900);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: inherit;
+    }
+
+    input,
+    select {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .auth-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .auth-left {
+      background: linear-gradient(145deg, #0F172A 0%, #1E3A8A 50%, #1D4ED8 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-left::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 20%, rgba(96, 165, 250, .18) 0%, transparent 55%);
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .auth-brand-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -.02em;
+    }
+
+    .auth-hero {
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-hero h2 {
+      font-size: 40px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .auth-hero p {
+      font-size: 15px;
+      color: rgba(255, 255, 255, .65);
+      font-weight: 500;
+      line-height: 1.6;
+      max-width: 380px;
+    }
+
+    .auth-features {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-feature {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: var(--r-md);
+    }
+
+    .auth-feature-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .auth-feature-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, .85);
+      font-weight: 600;
+    }
+
+    .auth-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      background: white;
+    }
+
+    .auth-form-wrap {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .auth-form-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin-bottom: 6px;
+    }
+
+    .auth-form-sub {
+      font-size: 14px;
+      color: var(--ink-500);
+      font-weight: 500;
+      margin-bottom: 32px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      background: var(--ink-100);
+      border-radius: var(--r-md);
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 9px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-500);
+      transition: all .15s;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .auth-tab.active {
+      background: white;
+      color: var(--ink-900);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-700);
+      letter-spacing: .01em;
+    }
+
+    .field-wrap {
+      position: relative;
+    }
+
+    .field-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-400);
+      display: flex;
+    }
+
+    .input {
+      width: 100%;
+      height: 46px;
+      border: 1.5px solid var(--ink-200);
+      border-radius: var(--r-md);
+      padding: 0 14px 0 42px;
+      font-size: 14px;
+      font-weight: 500;
+      background: white;
+      outline: none;
+      transition: all .15s;
+    }
+
+    .input:focus {
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px var(--blue-100);
+    }
+
+    .input.no-icon {
+      padding-left: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 18px;
+      height: 44px;
+      border-radius: var(--r-md);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      border: none;
+    }
+
+    .btn-blue {
+      background: var(--blue-600);
+      color: white;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-blue:hover {
+      background: var(--blue-700);
+      transform: translateY(-1px);
+    }
+
+    .btn-block {
+      width: 100%;
+      justify-content: center;
+      height: 48px;
+      font-size: 15px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-700);
+      border: 1.5px solid var(--ink-200);
+    }
+
+    .btn-ghost:hover {
+      background: var(--ink-50);
+      border-color: var(--ink-300);
+    }
+
+    .btn-red {
+      background: var(--red-50);
+      color: var(--red-600);
+      border: 1.5px solid var(--red-100);
+    }
+
+    .btn-green {
+      background: var(--green-50);
+      color: var(--green-700);
+      border: 1.5px solid var(--green-100);
+    }
+
+    .btn-sm {
+      height: 34px;
+      font-size: 12px;
+      padding: 0 12px;
+      border-radius: var(--r-sm);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+
+    .badge-blue {
+      background: var(--blue-50);
+      color: var(--blue-700);
+    }
+
+    .badge-green {
+      background: var(--green-50);
+      color: var(--green-700);
+    }
+
+    .badge-amber {
+      background: var(--amber-50);
+      color: var(--amber-600);
+    }
+
+    .badge-red {
+      background: var(--red-50);
+      color: var(--red-600);
+    }
+
+    .badge-gray {
+      background: var(--ink-100);
+      color: var(--ink-600);
+    }
+
+    /* ===== APP SHELL ===== */
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .sidebar {
+      background: white;
+      border-right: 1px solid var(--ink-100);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      z-index: 30;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px 20px;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -.02em;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--ink-900);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-400);
+      padding: 14px 12px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-600);
+      transition: all .12s;
+      text-align: left;
+      width: 100%;
+    }
+
+    .nav-item:hover {
+      background: var(--ink-100);
+      color: var(--ink-900);
+    }
+
+    .nav-item[data-active="1"] {
+      background: var(--ink-900);
+      color: white;
+    }
+
+    .sidebar-user {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--ink-100);
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main {
+      margin-left: 260px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(240, 244, 249, .95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(203, 213, 225, .5);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .content {
+      padding: 28px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: white;
+      border: 1px solid var(--ink-100);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ink-100);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* ===== STATS ===== */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .stat {
+      background: white;
+      border: 1px solid var(--ink-100);
+      border-radius: var(--r-lg);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .stat.blue::before {
+      background: var(--blue-500);
+    }
+
+    .stat.green::before {
+      background: var(--green-500);
+    }
+
+    .stat.amber::before {
+      background: var(--amber-500);
+    }
+
+    .stat.red::before {
+      background: var(--red-500);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-500);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== PARKING LOT ===== */
+    .lot-bg {
+      background: linear-gradient(160deg, #1E293B, #334155);
+      border-radius: var(--r-lg);
+      padding: 24px;
+    }
+
+    .lot-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .lot-spacer {
+      height: 28px;
+      background: repeating-linear-gradient(to right, #64748B 0, #64748B 12px, transparent 12px, transparent 22px);
+      border-radius: 4px;
+      margin: 16px 0;
+      opacity: .5;
+    }
+
+    .spot {
+      flex: none;
+      width: 80px;
+      height: 110px;
+      border-radius: 10px;
+      border: 2px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .15s;
+      position: relative;
+    }
+
+    .spot[data-status="free"] {
+      border-color: #22C55E;
+      background: rgba(34, 197, 94, .12);
+      color: #22C55E;
+      border-style: dashed;
+    }
+
+    .spot[data-status="free"]:hover {
+      background: rgba(34, 197, 94, .22);
+      transform: scale(1.04);
+      box-shadow: 0 0 16px rgba(34, 197, 94, .3);
+    }
+
+    .spot[data-status="occupied"] {
+      border-color: #64748B;
+      background: rgba(100, 116, 139, .15);
+      color: #94A3B8;
+      cursor: default;
+    }
+
+    .spot[data-status="reserved"] {
+      border-color: #F59E0B;
+      background: rgba(245, 158, 11, .12);
+      color: #F59E0B;
+      cursor: default;
+    }
+
+    .spot-label {
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      font-size: 10px;
+      opacity: .6;
+    }
+
+    /* ===== LIVE INDICATOR ===== */
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .5;
+        transform: scale(1.3);
+      }
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-500);
+      animation: pulse-dot 2s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    /* ===== MODAL ===== */
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slide-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .55);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fade-in .15s ease;
+    }
+
+    .modal {
+      background: white;
+      border-radius: var(--r-xl);
+      width: 500px;
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: slide-up .2s ease;
+    }
+
+    .modal-head {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ink-100);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--ink-100);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* ===== ALERT BANNER ===== */
+    .alert-banner {
+      background: linear-gradient(135deg, var(--red-50), #FEF2F2);
+      border: 1px solid var(--red-200);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--red-700);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .auth-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-left {
+        display: none;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .spot {
+        width: 60px;
+        height: 85px;
+        font-size: 9px;
+      }
+    }
+
+    /* ===== TOAST ===== */
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink-900);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: toast-in .25s ease;
+      z-index: 999;
+    }
+
+    .toast.err {
+      background: var(--red-600);
+    }
+
+    /* ===== PROGRESS ===== */
+    .progress {
+      height: 6px;
+      background: var(--ink-100);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress>div {
+      height: 100%;
+      background: var(--blue-600);
+      border-radius: 999px;
+      transition: width .4s;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .row-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ===== SUGGESTION PILL ===== */
+    .suggestion-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--blue-50), white);
+      border: 1.5px solid var(--blue-200);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .suggestion-pill:hover {
+      border-color: var(--blue-400);
+      box-shadow: 0 2px 12px rgba(37, 99, 235, .1);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ============================================================
+    // ICONS
+    // ============================================================
+    const Ico = ({ d, size = 20, fill = 'none', stroke = 'currentColor', sw = 2, children, vb = '0 0 24 24' }) => (
+      <svg width={size} height={size} viewBox={vb} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+        {d ? <path d={d} /> : children}
+      </svg>
+    );
+
+    const IHome = p => <Ico {...p}><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z" /></Ico>;
+    const IMap = p => <Ico {...p}><path d="M9 4l-6 2v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></Ico>;
+    const ICar = p => <Ico {...p}><path d="M5 17h14M3 17v-4l2-6a2 2 0 0 1 2-1.4h10a2 2 0 0 1 2 1.4l2 6v4" /><circle cx="7" cy="17" r="2" fill="currentColor" /><circle cx="17" cy="17" r="2" fill="currentColor" /></Ico>;
+    const IClock = p => <Ico {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Ico>;
+    const IHistory = p => <Ico {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l3 2" /></Ico>;
+    const IUser = p => <Ico {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Ico>;
+    const IUsers = p => <Ico {...p}><circle cx="9" cy="8" r="4" /><path d="M2 21a7 7 0 0 1 14 0" /><path d="M16 4a4 4 0 0 1 0 8" /><path d="M22 21a7 7 0 0 0-5-6.7" /></Ico>;
+    const ILock = p => <Ico {...p}><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></Ico>;
+    const IMail = p => <Ico {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></Ico>;
+    const IChev = p => <Ico {...p}><path d="M9 6l6 6-6 6" /></Ico>;
+    const IChevL = p => <Ico {...p}><path d="M15 6l-6 6 6 6" /></Ico>;
+    const ICheck = p => <Ico {...p}><path d="M5 12l5 5 9-11" /></Ico>;
+    const IWallet = p => <Ico {...p}><rect x="3" y="6" width="18" height="14" rx="2" /><path d="M3 10h18" /><circle cx="16" cy="14" r="1.5" fill="currentColor" stroke="none" /></Ico>;
+    const IBell = p => <Ico {...p}><path d="M6 10a6 6 0 1 1 12 0c0 4 2 5 2 7H4c0-2 2-3 2-7z" /><path d="M10 21a2 2 0 0 0 4 0" /></Ico>;
+    const ISearch = p => <Ico {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></Ico>;
+    const IChart = p => <Ico {...p}><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 6-7" /></Ico>;
+    const ISignal = p => <Ico {...p}><path d="M2 20h4v-7H2zM10 20h4V9h-4zM18 20h4V4h-4z" fill="currentColor" stroke="none" /></Ico>;
+    const ICog = p => <Ico {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7 4.9l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></Ico>;
+    const ILocation = p => <Ico {...p}><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z" /><circle cx="12" cy="9" r="3" /></Ico>;
+    const IAlertTriangle = p => <Ico {...p}><path d="M10.3 3.5L2 19h20L13.7 3.5a2 2 0 0 0-3.4 0z" /><path d="M12 9v5M12 16v1" /></Ico>;
+    const IGate = p => <Ico {...p}><rect x="2" y="19" width="4" height="2" rx="1" /><rect x="18" y="19" width="4" height="2" rx="1" /><path d="M6 20h12" /><rect x="10" y="4" width="4" height="16" rx="1" /><path d="M2 4h4M18 4h4" /></Ico>;
+
+    const HOURLY_RATE = 5;
+    const CURRENCY = 'MAD';
+    const LOT_NAME = 'Parking Central Tanger';
+
+    // ============================================================
+    // HELPER: Générer les places de parking
+    // ============================================================
+    function generateSpots(n, occupancyRate) {
+      const spots = [];
+      for (let i = 0; i < n; i++) {
+        spots.push({
+          id: `spot-${i}`,
+          label: `A${String(i + 1).padStart(2, '0')}`,
+          status: 'free',
+          online: true,
+          userId: null,
+          plate: null,
+          userName: null,
+          startedAt: null,
+          until: null
+        });
+      }
+
+      // Simuler des places occupées
+      const toOccupy = Math.floor(n * occupancyRate);
+      const plates = ['AL-4821', 'KX-2310', 'PW-9920', 'BM-6611', 'NS-8844', 'CT-1007'];
+      const names = ['Yassine K.', 'Sara M.', 'Omar B.', 'Lina T.', 'Mehdi A.', 'Nora F.'];
+
+      for (let i = 0; i < toOccupy; i++) {
+        if (i < spots.length) {
+          spots[i].status = i % 3 === 0 ? 'occupied' : 'reserved';
+          spots[i].plate = plates[i % plates.length];
+          spots[i].userName = names[i % names.length];
+          spots[i].startedAt = Date.now() - (Math.random() * 60 * 60000);
+          spots[i].until = Date.now() + (15 + Math.random() * 90) * 60000;
+        }
+      }
+      return spots;
+    }
+
+    // ============================================================
+    // COMPOSANTS
+    // ============================================================
+    function LegendDot({ color, bg, label }) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--ink-600)' }}>
+          <div style={{ width: 14, height: 10, borderRadius: 3, background: bg, border: `1.5px solid ${color}` }} />
+          {label}
+        </div>
+      );
+    }
+
+    function Stat({ label, value, color = 'blue' }) {
+      return (
+        <div className={`stat ${color}`}>
+          <div className="stat-label">{label}</div>
+          <div className="stat-value">{value}</div>
+        </div>
+      );
+    }
+
+    function Modal({ title, onClose, children, footer }) {
+      return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="modal">
+            <div className="modal-head">
+              <span className="modal-title">{title}</span>
+              <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ width: 32, height: 32, padding: 0, borderRadius: 8 }}>✕</button>
+            </div>
+            <div className="modal-body">{children}</div>
+            {footer && <div className="modal-footer">{footer}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    function ParkingLot({ spots, selectedId, onSelect }) {
+      const half = Math.ceil(spots.length / 2);
+      const row1 = spots.slice(0, half);
+      const row2 = spots.slice(half);
+
+      return (
+        <div className="lot-bg">
+          <div className="lot-row">
+            {row1.map(spot => (
+              <button
+                key={spot.id}
+                className="spot"
+                data-status={selectedId === spot.id ? 'selected' : spot.status}
+                onClick={() => onSelect && spot.status === 'free' && onSelect(spot.id)}
+                title={spot.status !== 'free' && spot.plate ? `${spot.userName} · ${spot.plate}` : spot.label}
+              >
+                {spot.status !== 'free' && <ICar size={28} stroke={spot.status === 'reserved' ? '#F59E0B' : '#94A3B8'} />}
+                {spot.status === 'free' && <ICar size={24} stroke="#22C55E" />}
+                <span className="spot-label">{spot.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="lot-spacer" />
+          <div className="lot-row">
+            {row2.map(spot => (
+              <button
+                key={spot.id}
+                className="spot"
+                data-status={selectedId === spot.id ? 'selected' : spot.status}
+                onClick={() => onSelect && spot.status === 'free' && onSelect(spot.id)}
+              >
+                {spot.status !== 'free' && <ICar size={28} stroke={spot.status === 'reserved' ? '#F59E0B' : '#94A3B8'} />}
+                {spot.status === 'free' && <ICar size={24} stroke="#22C55E" />}
+                <span className="spot-label">{spot.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // PAGE D'AUTHENTIFICATION
+    // ============================================================
+    function AuthPage({ onLogin }) {
+      const [mode, setMode] = React.useState('login');
+      const [email, setEmail] = React.useState('');
+      const [password, setPassword] = React.useState('');
+      const [name, setName] = React.useState('');
+      const [plate, setPlate] = React.useState('');
+      const [role, setRole] = React.useState('user');
+      const [error, setError] = React.useState('');
+
+      const handleSubmit = () => {
+        if (!email || !password) {
+          setError('Veuillez remplir tous les champs');
+          return;
+        }
+        if (mode === 'signup' && !name) {
+          setError('Veuillez entrer votre nom');
+          return;
+        }
+        // Simulation de connexion
+        onLogin({
+          name: name || email.split('@')[0],
+          email: email,
+          role: role,
+          plate: plate || 'XX-0000'
+        });
+      };
+
+      return (
+        <div className="auth-shell">
+          <div className="auth-left">
+            <div className="auth-brand">
+              <div className="auth-brand-icon"><ICar size={24} /></div>
+              <div className="auth-brand-name">ParkSense</div>
+            </div>
+            <div className="auth-hero">
+              <h2>Stationnez<br />intelligemment</h2>
+              <p>Détection temps réel, réservation en ligne, gestion des barrières.</p>
+            </div>
+            <div className="auth-features">
+              <div className="auth-feature">
+                <div className="auth-feature-icon" style={{ background: 'rgba(59,130,246,.2)' }}><IMap size={16} stroke="white" /></div>
+                <div className="auth-feature-text">Carte interactive en temps réel</div>
+              </div>
+              <div className="auth-feature">
+                <div className="auth-feature-icon" style={{ background: 'rgba(16,185,129,.2)' }}><ICheck size={16} stroke="white" /></div>
+                <div className="auth-feature-text">Réservation sécurisée</div>
+              </div>
+              <div className="auth-feature">
+                <div className="auth-feature-icon" style={{ background: 'rgba(245,158,11,.2)' }}><IGate size={16} stroke="white" /></div>
+                <div className="auth-feature-text">Contrôle automatique barrières</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-right">
+            <div className="auth-form-wrap">
+              <div className="auth-form-title">{mode === 'login' ? 'Connexion' : 'Créer un compte'}</div>
+              <div className="auth-form-sub">
+                {mode === 'login' ? 'Accédez à votre espace de réservation' : 'Rejoignez ParkSense dès maintenant'}
+              </div>
+
+              <div className="auth-tabs">
+                <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>Connexion</button>
+                <button className={`auth-tab ${mode === 'signup' ? 'active' : ''}`} onClick={() => { setMode('signup'); setError(''); }}>Inscription</button>
+              </div>
+
+              {error && (
+                <div style={{ background: 'var(--red-50)', color: 'var(--red-600)', padding: '10px', borderRadius: 'var(--r-md)', marginBottom: '16px', fontSize: '12px', fontWeight: 600 }}>
+                  ⚠️ {error}
+                </div>
+              )}
+
+              {mode === 'signup' && (
+                <>
+                  <div className="field">
+                    <label>Nom complet</label>
+                    <div className="field-wrap">
+                      <div className="field-icon"><IUser size={16} /></div>
+                      <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Jean Dupont" />
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label>Plaque d'immatriculation</label>
+                    <div className="field-wrap">
+                      <div className="field-icon"><ICar size={16} /></div>
+                      <input className="input" value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="XX-0000" />
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label>Rôle</label>
+                    <select className="input no-icon" style={{ paddingLeft: 14 }} value={role} onChange={e => setRole(e.target.value)}>
+                      <option value="user">Utilisateur</option>
+                      <option value="admin">Administrateur</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="field">
+                <label>Email</label>
+                <div className="field-wrap">
+                  <div className="field-icon"><IMail size={16} /></div>
+                  <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="exemple@email.com" />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Mot de passe</label>
+                <div className="field-wrap">
+                  <div className="field-icon"><ILock size={16} /></div>
+                  <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                </div>
+              </div>
+
+              <button className="btn btn-blue btn-block" onClick={handleSubmit}>
+                {mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+                <IChev size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // VUE UTILISATEUR - CARTE
+    // ============================================================
+    function UserMap({ user, spots, activeReservation, onReserve, onEndReservation, now, showToast }) {
+      const [selectedId, setSelectedId] = React.useState(null);
+      const [showModal, setShowModal] = React.useState(false);
+      const [duration, setDuration] = React.useState(1);
+      const [step, setStep] = React.useState(0);
+
+      const freeSpots = spots.filter(s => s.status === 'free').length;
+      const totalSpots = spots.length;
+      const occupancyRate = Math.round(((totalSpots - freeSpots) / totalSpots) * 100);
+      const isFull = freeSpots === 0;
+      const selectedSpot = spots.find(s => s.id === selectedId);
+      const suggestedSpot = spots.find(s => s.status === 'free');
+
+      // Alerte de surcharge
+      React.useEffect(() => {
+        if (isFull) {
+          showToast('⚠️ Parking complet ! Toutes les places sont occupées', 'warn');
+        }
+      }, [isFull]);
+
+      const handleSelect = (id) => {
+        if (!activeReservation) {
+          setSelectedId(id);
+          setStep(0);
+          setShowModal(true);
+        }
+      };
+
+      const handleReserve = () => {
+        if (selectedSpot) {
+          onReserve(selectedSpot.id, duration);
+          setShowModal(false);
+          setSelectedId(null);
+          showToast(`✅ Place ${selectedSpot.label} réservée avec succès !`, 'ok');
+        }
+      };
+
+      const totalPrice = (duration * HOURLY_RATE).toFixed(2);
+
+      const displaySpots = spots.map(s => ({
+        ...s,
+        isMine: activeReservation && activeReservation.spotId === s.id
+      }));
+
+      return (
+        <>
+          {/* Alerte parking complet */}
+          {isFull && (
+            <div className="alert-banner">
+              <IAlertTriangle size={20} />
+              <div><strong>Parking saturé</strong> — Plus aucune place disponible. Veuillez réessayer plus tard.</div>
+            </div>
+          )}
+
+          {/* Suggestion de place */}
+          {!activeReservation && suggestedSpot && !isFull && (
+            <div className="suggestion-pill" onClick={() => handleSelect(suggestedSpot.id)}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--blue-100)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ILocation size={20} stroke="var(--blue-600)" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Place suggérée : <strong>{suggestedSpot.label}</strong></div>
+                <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>La plus proche de l'entrée — disponible immédiatement</div>
+              </div>
+              <span className="badge badge-blue">Réserver →</span>
+            </div>
+          )}
+
+          {/* Réservation active */}
+          {activeReservation && (
+            <div className="card" style={{ background: 'linear-gradient(135deg, var(--blue-700), var(--blue-900))', border: 'none' }}>
+              <div style={{ padding: 20, color: 'white' }}>
+                <div className="row-between">
+                  <div className="row">
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: 'uppercase' }}>Réservation active</div>
+                      <div style={{ fontSize: 28, fontWeight: 800 }}>Place {activeReservation.label}</div>
+                      <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{LOT_NAME} · {user.plate || 'XX-0000'}</div>
+                    </div>
+                  </div>
+                  <button className="btn btn-red" style={{ background: 'rgba(239,68,68,.15)', color: '#FCA5A5' }} onClick={onEndReservation}>
+                    Terminer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Statistiques */}
+          <div className="stat-grid">
+            <Stat label="Places libres" value={freeSpots} color="green" />
+            <Stat label="Taux d'occupation" value={`${occupancyRate}%`} color="blue" />
+            <Stat label="Tarif horaire" value={`${HOURLY_RATE} ${CURRENCY}`} color="amber" />
+            <Stat label="Arduino" value={spots.filter(s => s.online).length > 0 ? 'Connecté' : 'Hors-ligne'} color={spots.filter(s => s.online).length > 0 ? 'green' : 'red'} />
+          </div>
+
+          {/* Carte parking */}
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <div className="card-title">{LOT_NAME}</div>
+                <div className="row" style={{ marginTop: 4 }}>
+                  <span className="live-dot" />
+                  <span style={{ fontSize: 11, color: 'var(--ink-500)', marginLeft: 6 }}>Mise à jour temps réel</span>
+                </div>
+              </div>
+              <div className="row" style={{ gap: 12 }}>
+                <LegendDot color="#22C55E" bg="rgba(34,197,94,.12)" label="Libre" />
+                <LegendDot color="#64748B" bg="rgba(100,116,139,.15)" label="Occupée" />
+                <LegendDot color="#F59E0B" bg="rgba(245,158,11,.12)" label="Réservée" />
+              </div>
+            </div>
+            <div className="card-body">
+              <ParkingLot spots={displaySpots} selectedId={selectedId} onSelect={handleSelect} />
+            </div>
+          </div>
+
+          {/* Modal réservation */}
+          {showModal && selectedSpot && (
+            <Modal title={`Réservation - Place ${selectedSpot.label}`} onClose={() => { setShowModal(false); setSelectedId(null); }}>
+              {step === 0 ? (
+                <>
+                  <div className="field">
+                    <label>Durée de stationnement</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
+                      {[0.5, 1, 2, 3].map(h => (
+                        <button key={h} onClick={() => setDuration(h)} style={{
+                          padding: '12px',
+                          borderRadius: 10,
+                          background: duration === h ? 'var(--blue-600)' : 'var(--ink-100)',
+                          color: duration === h ? 'white' : 'var(--ink-700)',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}>
+                          {h < 1 ? '30 min' : `${h}h`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--ink-50)', borderRadius: 12, padding: 16, marginTop: 16 }}>
+                    <div className="row-between"><span>Tarif horaire</span><span>{HOURLY_RATE} {CURRENCY}/h</span></div>
+                    <div className="row-between" style={{ marginTop: 8 }}><span>Durée</span><span>{duration < 1 ? '30 min' : `${duration} heure(s)`}</span></div>
+                    <div className="row-between" style={{ marginTop: 12, paddingTop: 8, borderTop: '1px dashed var(--ink-200)', fontWeight: 800, fontSize: 16 }}>
+                      <span>Total</span><span>{totalPrice} {CURRENCY}</span>
+                    </div>
+                  </div>
+                  <button className="btn btn-blue btn-block" style={{ marginTop: 20 }} onClick={() => setStep(1)}>
+                    Continuer
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ textAlign: 'center', paddingBottom: 16 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 28, background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                      <IWallet size={28} stroke="var(--green-600)" />
+                    </div>
+                    <div style={{ fontSize: 32, fontWeight: 800 }}>{totalPrice} {CURRENCY}</div>
+                    <div style={{ fontSize: 13, color: 'var(--ink-500)' }}>Place {selectedSpot.label} · {duration < 1 ? '30 min' : `${duration}h`}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setStep(0)}>Retour</button>
+                    <button className="btn btn-blue" style={{ flex: 1 }} onClick={handleReserve}>Confirmer le paiement</button>
+                  </div>
+                </>
+              )}
+            </Modal>
+          )}
+        </>
+      );
+    }
+
+    // ============================================================
+    // VUE UTILISATEUR - HISTORIQUE
+    // ============================================================
+    function UserHistory() {
+      const history = [
+        { id: 'R-023', spot: 'A07', date: '22 Avril', duration: '1h 30m', amount: 7.50, status: 'completed' },
+        { id: 'R-019', spot: 'A12', date: '19 Avril', duration: '2h', amount: 10.00, status: 'completed' },
+        { id: 'R-014', spot: 'A03', date: '15 Avril', duration: '45m', amount: 3.75, status: 'completed' },
+      ];
+
+      return (
+        <div className="card">
+          <div className="card-head">
+            <span className="card-title">Historique des réservations</span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--ink-100)' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>ID</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>Place</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>Date</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>Durée</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>Montant</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink-500)' }}>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map(r => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid var(--ink-100)' }}>
+                    <td style={{ padding: '12px', fontSize: 12 }}>{r.id}</td>
+                    <td style={{ padding: '12px' }}><span className="badge badge-blue">{r.spot}</span></td>
+                    <td style={{ padding: '12px', fontSize: 12 }}>{r.date}</td>
+                    <td style={{ padding: '12px', fontSize: 12 }}>{r.duration}</td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{r.amount} {CURRENCY}</td>
+                    <td style={{ padding: '12px' }}><span className="badge badge-green">Terminée</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // VUE UTILISATEUR - PROFIL
+    // ============================================================
+    function UserProfile({ user, onLogout }) {
+      const [name, setName] = React.useState(user.name);
+      const [email, setEmail] = React.useState(user.email);
+      const [plate, setPlate] = React.useState(user.plate || '');
+      const [carModel, setCarModel] = React.useState('Peugeot 208');
+
+      return (
+        <>
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">Mon profil</span>
+            </div>
+            <div style={{ padding: 24 }}>
+              <div className="row" style={{ gap: 18, marginBottom: 24 }}>
+                <div className="avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
+                  {name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                </div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 800 }}>{name}</div>
+                  <div style={{ fontSize: 13, color: 'var(--ink-500)' }}>{email}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: 16 }}>
+                <div className="field">
+                  <label>Nom complet</label>
+                  <input className="input no-icon" style={{ paddingLeft: 14 }} value={name} onChange={e => setName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input className="input no-icon" style={{ paddingLeft: 14 }} type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Plaque d'immatriculation</label>
+                  <input className="input no-icon" style={{ paddingLeft: 14 }} value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} />
+                </div>
+                <div className="field">
+                  <label>Modèle du véhicule</label>
+                  <input className="input no-icon" style={{ paddingLeft: 14 }} value={carModel} onChange={e => setCarModel(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={onLogout}>Déconnexion</button>
+            <button className="btn btn-blue">Enregistrer</button>
+          </div>
+        </>
+      );
+    }
+
+    // ============================================================
+    // VUE ADMIN - APERÇU
+    // ============================================================
+    function AdminOverview({ spots }) {
+      const total = spots.length;
+      const free = spots.filter(s => s.status === 'free').length;
+      const occupied = spots.filter(s => s.status === 'occupied').length;
+      const reserved = spots.filter(s => s.status === 'reserved').length;
+      const occupancy = Math.round(((occupied + reserved) / total) * 100);
+      const revenue = 4580;
+
+      return (
+        <>
+          <div className="stat-grid">
+            <Stat label="Taux d'occupation" value={`${occupancy}%`} color="blue" />
+            <Stat label="Places libres" value={free} color="green" />
+            <Stat label="Places occupées" value={occupied} color="amber" />
+            <Stat label="Revenus (semaine)" value={`${revenue} ${CURRENCY}`} color="green" />
+          </div>
+
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">Synthèse du parking</span>
+            </div>
+            <div className="card-body">
+              <div className="row-between" style={{ marginBottom: 16 }}>
+                <span>Occupation globale</span>
+                <span style={{ fontWeight: 800 }}>{occupancy}%</span>
+              </div>
+              <div className="progress"><div style={{ width: `${occupancy}%` }} /></div>
+              <div className="row-between" style={{ marginTop: 20 }}>
+                <div><div style={{ fontSize: 11, color: 'var(--ink-500)' }}>Libres</div><div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green-600)' }}>{free}</div></div>
+                <div><div style={{ fontSize: 11, color: 'var(--ink-500)' }}>Occupées</div><div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber-600)' }}>{occupied}</div></div>
+                <div><div style={{ fontSize: 11, color: 'var(--ink-500)' }}>Réservées</div><div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue-600)' }}>{reserved}</div></div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // ============================================================
+    // VUE ADMIN - CARTE LIVE
+    // ============================================================
+    function AdminLiveMap({ spots }) {
+      const free = spots.filter(s => s.status === 'free').length;
+      const occupied = spots.filter(s => s.status === 'occupied').length;
+      const reserved = spots.filter(s => s.status === 'reserved').length;
+
+      return (
+        <>
+          <div className="stat-grid">
+            <Stat label="Libres" value={free} color="green" />
+            <Stat label="Occupées" value={occupied} color="blue" />
+            <Stat label="Réservées" value={reserved} color="amber" />
+          </div>
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">Carte en direct - Administration</span>
+              <div className="row">
+                <LegendDot color="#22C55E" bg="rgba(34,197,94,.12)" label="Libre" />
+                <LegendDot color="#64748B" bg="rgba(100,116,139,.15)" label="Occupée" />
+                <LegendDot color="#F59E0B" bg="rgba(245,158,11,.12)" label="Réservée" />
+              </div>
+            </div>
+            <div className="card-body">
+              <ParkingLot spots={spots} />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // ============================================================
+    // APPLICATION PRINCIPALE
+    // ============================================================
+    function App() {
+      const [user, setUser] = React.useState(null);
+      const [spots, setSpots] = React.useState(() => generateSpots(12, 0.45));
+      const [activeReservation, setActiveReservation] = React.useState(null);
+      const [currentTime, setCurrentTime] = React.useState(Date.now());
+      const [toast, setToast] = React.useState(null);
+      const [currentTab, setCurrentTab] = React.useState('map');
+
+      const isAdmin = user?.role === 'admin';
+
+      // Mise à jour temps réel (simulation Arduino)
+      React.useEffect(() => {
+        const interval = setInterval(() => {
+          setSpots(prev => {
+            const newSpots = [...prev];
+            // Simulation: une place libre devient occupée aléatoirement
+            const randomIndex = Math.floor(Math.random() * newSpots.length);
+            if (newSpots[randomIndex].status === 'free' && Math.random() < 0.1) {
+              newSpots[randomIndex] = {
+                ...newSpots[randomIndex],
+                status: 'occupied',
+                plate: `XX-${Math.floor(1000 + Math.random() * 9000)}`,
+                userName: 'Client',
+                startedAt: Date.now(),
+                until: Date.now() + 3600000
+              };
+            }
+            // Simulation: une place occupée redevient libre
+            if (newSpots[randomIndex].status === 'occupied' && Math.random() < 0.08) {
+              newSpots[randomIndex] = {
+                ...newSpots[randomIndex],
+                status: 'free',
+                plate: null,
+                userName: null,
+                startedAt: null,
+                until: null
+              };
+            }
+            return newSpots;
+          });
+          setCurrentTime(Date.now());
+        }, 5000);
+        return () => clearInterval(interval);
+      }, []);
+
+      // Effacer le toast après 3 secondes
+      React.useEffect(() => {
+        if (toast) {
+          const timer = setTimeout(() => setToast(null), 3000);
+          return () => clearTimeout(timer);
+        }
+      }, [toast]);
+
+      const showToast = (msg, type = 'ok') => {
+        setToast({ msg, type });
+      };
+
+      const handleReserve = (spotId, duration) => {
+        const spotIndex = spots.findIndex(s => s.id === spotId);
+        const spot = spots[spotIndex];
+        const startedAt = Date.now();
+        const until = startedAt + duration * 3600000;
+        const amount = duration * HOURLY_RATE;
+
+        setActiveReservation({
+          spotId,
+          spotIndex,
+          label: spot.label,
+          plate: user?.plate || 'AL-4821',
+          startedAt,
+          until,
+          amount
+        });
+
+        setSpots(prev => prev.map((s, i) =>
+          i === spotIndex ? { ...s, status: 'reserved', userName: user?.name, plate: user?.plate, startedAt, until } : s
+        ));
+      };
+
+      const handleEndReservation = () => {
+        if (activeReservation) {
+          setSpots(prev => prev.map((s, i) =>
+            i === activeReservation.spotIndex ? { ...s, status: 'free', userName: null, plate: null, startedAt: null, until: null } : s
+          ));
+          setActiveReservation(null);
+          showToast('Réservation terminée', 'ok');
+        }
+      };
+
+      if (!user) {
+        return <AuthPage onLogin={setUser} />;
+      }
+
+      // Navigation items
+      const userNav = [
+        { id: 'map', label: 'Carte en direct', icon: IMap },
+        { id: 'active', label: 'Réservation active', icon: IClock, badge: activeReservation ? 1 : null },
+        { id: 'history', label: 'Historique', icon: IHistory },
+        { id: 'profile', label: 'Mon profil', icon: IUser }
+      ];
+
+      const adminNav = [
+        { id: 'overview', label: 'Aperçu', icon: IHome },
+        { id: 'livemap', label: 'Carte en direct', icon: IMap },
+        { id: 'users', label: 'Utilisateurs', icon: IUsers }
+      ];
+
+      const navItems = isAdmin ? adminNav : userNav;
+      const pageTitles = {
+        map: 'Carte en direct',
+        active: 'Réservation active',
+        history: 'Historique',
+        profile: 'Mon profil',
+        overview: 'Aperçu administration',
+        livemap: 'Carte en direct',
+        users: 'Gestion des utilisateurs'
+      };
+
+      return (
+        <div className="app-shell">
+          {/* Sidebar */}
+          <aside className="sidebar">
+            <div className="brand">
+              <div className="brand-icon"><ICar size={18} /></div>
+              <div>
+                <div>ParkSense</div>
+                <div className="brand-sub">{isAdmin ? 'Admin' : 'Utilisateur'}</div>
+              </div>
+            </div>
+            <div className="nav-section">{isAdmin ? 'Gestion' : 'Menu'}</div>
+            {navItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button key={item.id} className="nav-item" data-active={currentTab === item.id ? '1' : '0'} onClick={() => setCurrentTab(item.id)}>
+                  <Icon size={16} />
+                  {item.label}
+                  {item.badge && <span className="badge badge-blue" style={{ marginLeft: 'auto', padding: '2px 7px' }}>{item.badge}</span>}
+                </button>
+              );
+            })}
+
+            <div className="sidebar-user">
+              <div className="row" style={{ padding: '8px 12px' }}>
+                <div className="avatar">{user.name?.split(' ').map(w => w[0]).slice(0, 2).join('') || 'U'}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{user.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>{isAdmin ? 'Administrateur' : 'Client'}</div>
+                </div>
+                <button onClick={() => setUser(null)} style={{ color: 'var(--ink-400)', cursor: 'pointer' }}><ICog size={15} /></button>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="main">
+            <div className="topbar">
+              <div>
+                <div className="topbar-title">{pageTitles[currentTab]}</div>
+                <div className="topbar-sub">{LOT_NAME} · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+              </div>
+              <div className="row" style={{ gap: 8, fontSize: 12, fontWeight: 700, background: 'var(--green-50)', padding: '6px 14px', borderRadius: 999 }}>
+                <span className="live-dot" />
+                Arduino live · {spots.filter(s => s.online).length} capteurs actifs
+              </div>
+            </div>
+
+            <div className="content">
+              {!isAdmin && currentTab === 'map' && (
+                <UserMap
+                  user={user}
+                  spots={spots}
+                  activeReservation={activeReservation}
+                  onReserve={handleReserve}
+                  onEndReservation={handleEndReservation}
+                  now={currentTime}
+                  showToast={showToast}
+                />
+              )}
+              {!isAdmin && currentTab === 'active' && (
+                <div className="card">
+                  {activeReservation ? (
+                    <div style={{ padding: 28, textAlign: 'center' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-500)', marginBottom: 8 }}>Réservation en cours</div>
+                      <div style={{ fontSize: 48, fontWeight: 800 }}>Place {activeReservation.label}</div>
+                      <div style={{ marginTop: 20 }}>
+                        <button className="btn btn-red" onClick={handleEndReservation}>Terminer la réservation</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="empty-state" style={{ padding: 48, textAlign: 'center' }}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>🅿️</div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>Aucune réservation active</div>
+                      <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 4 }}>Allez sur la carte pour réserver une place</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {!isAdmin && currentTab === 'history' && <UserHistory />}
+              {!isAdmin && currentTab === 'profile' && <UserProfile user={user} onLogout={() => setUser(null)} />}
+
+              {isAdmin && currentTab === 'overview' && <AdminOverview spots={spots} />}
+              {isAdmin && currentTab === 'livemap' && <AdminLiveMap spots={spots} />}
+              {isAdmin && currentTab === 'users' && (
+                <div className="card">
+                  <div className="card-head">
+                    <span className="card-title">Utilisateurs enregistrés</span>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--ink-100)' }}>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Nom</th>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Email</th>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Rôle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: 12 }}>Admin Principal</td>
+                          <td style={{ padding: 12 }}>admin@parksense.com</td>
+                          <td style={{ padding: 12 }}><span className="badge badge-blue">Admin</span></td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: 12 }}>Yassine K.</td>
+                          <td style={{ padding: 12 }}>yassine@mail.com</td>
+                          <td style={{ padding: 12 }}><span className="badge badge-green">Utilisateur</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </main>
+
+          {toast && (
+            <div className={`toast ${toast.type === 'err' ? 'err' : ''}`}>
+              <ICheck size={16} />
+              {toast.msg}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>
