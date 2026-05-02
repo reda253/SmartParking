@@ -12,6 +12,7 @@ urlpatterns = [
     path('reservations/', views.get_reservations, name='get_reservations'),
     
     # Gate control
+    path('manual_gate/', views.manual_gate, name='manual_gate'),
     path('entry/', views.entry_gate, name='entry_gate'),
     path('exit/', views.exit_gate, name='exit_gate'),
 

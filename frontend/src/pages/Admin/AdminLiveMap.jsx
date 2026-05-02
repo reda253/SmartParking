@@ -41,8 +41,43 @@ export default function AdminLiveMap({ spots, setSpots }) {
     setSelectedId(null);
   };
 
+  const triggerGate = async (command) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/manual_gate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+      if (!response.ok) alert('Erreur serveur: Arduino hors ligne ?');
+    } catch (e) {
+      alert("Erreur de connexion au backend.");
+    }
+  };
+
   return (
     <>
+      <div className="card" style={{ marginBottom: 24, padding: 20, background: 'var(--ink-50)', borderRadius: 'var(--r-md)' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: 'var(--ink-600)' }}>
+          🕹️ Télécommande Barrières (Arduino Override)
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ border: '1px solid var(--blue-200)', padding: 12, borderRadius: 8, flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--blue-700)' }}>Porte d'Entrée</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+               <button className="btn btn-blue" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_OPEN')}>Ouvrir</button>
+               <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_CLOSE')}>Fermer</button>
+            </div>
+          </div>
+          <div style={{ border: '1px solid var(--red-200)', padding: 12, borderRadius: 8, flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--red-700)' }}>Porte de Sortie</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+               <button className="btn btn-red" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_OPEN')}>Ouvrir</button>
+               <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_CLOSE')}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <div className="card-head">
           <span className="card-title">Carte en direct - Contrôle Administrateur</span>

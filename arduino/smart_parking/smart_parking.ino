@@ -34,6 +34,7 @@ Servo exitServo;
 bool entryDoorOpen = false;
 bool exitDoorOpen  = false;
 bool slotOccupied[NUM_SENSORS] = {false, false, false, false};
+bool spotReserved[NUM_SENSORS] = {false, false, false, false};
 
 // ════════════════════════════════════════════════════════════════
 //  Ultrasonic Helper
@@ -119,6 +120,14 @@ void handleSerialCommand() {
     else if (cmd == "ENTRY_CLOSE") closeEntryDoor();
     else if (cmd == "EXIT_OPEN")   openExitDoor();
     else if (cmd == "EXIT_CLOSE")  closeExitDoor();
+    else if (cmd.startsWith("RESERVE_")) {
+      int id = cmd.substring(8).toInt() - 1;
+      if (id >= 0 && id < NUM_SENSORS) spotReserved[id] = true;
+    }
+    else if (cmd.startsWith("FREE_")) {
+      int id = cmd.substring(5).toInt() - 1;
+      if (id >= 0 && id < NUM_SENSORS) spotReserved[id] = false;
+    }
     else {
       Serial.print("[WARN] Unknown command: ");
       Serial.println(cmd);
@@ -168,14 +177,15 @@ void loop() {
 
     // OUT_OF_RANGE (-1) → treat as FREE (nothing detected)
     bool occupied = (distance > 0 && distance < OCCUPIED_THRESHOLD_CM);
+    bool forceOccupied = occupied || spotReserved[i];
 
     // Only update LED on state change (avoids flicker)
-    if (occupied != slotOccupied[i]) {
-      slotOccupied[i] = occupied;
-      setSlotLED(i, occupied);
+    if (forceOccupied != slotOccupied[i]) {
+      slotOccupied[i] = forceOccupied;
+      setSlotLED(i, forceOccupied);
     }
 
-    if (!occupied) freeSlots++;
+    if (!forceOccupied) freeSlots++;
 
     // Always send distance for debugging + status
     // Format: "S1:23.4cm:FREE"  or  "S2:OUT_OF_RANGE:FREE"
@@ -188,7 +198,7 @@ void loop() {
       Serial.print("cm");
     }
     Serial.print(":");
-    Serial.println(occupied ? "OCCUPIED" : "FREE");
+    Serial.println(forceOccupied ? "OCCUPIED" : "FREE");
 
     delay(30);
   }

@@ -7,7 +7,8 @@ from django.db import transaction as db_transaction
 from django.db.models import Sum
 from datetime import timedelta
 import math
-from .models import Place, Reservation, Transaction, Utilisateur, Tarif
+import time
+from .models import Place, Reservation, Transaction, Utilisateur, Tarif, Alerte
 from .serializers import PlaceSerializer, ReservationSerializer
 from .serial_comm import send_command
 
@@ -70,6 +71,17 @@ def reserve_spot(request):
             place.statut = 'reservee'
             place.save()
             
+            if place.id_sensor:
+                send_command(f"RESERVE_{place.id_sensor.id}")
+                
+            if Place.objects.filter(statut='libre').count() == 0:
+                Alerte.objects.create(
+                    type='parking_plein',
+                    entite_id=1,
+                    entite_type='barriere',
+                    message='Le parking est complet suite à une réservation.'
+                )
+            
             return Response(ReservationSerializer(reservation).data, status=status.HTTP_201_CREATED)
             
     except Place.DoesNotExist:
@@ -105,6 +117,17 @@ def entry_gate(request):
         # Update debut time to actual entry time
         reservation.debut = timezone.now()
         reservation.save()
+        
+        if Place.objects.filter(statut='libre').count() == 0:
+            Alerte.objects.create(
+                type='parking_plein',
+                entite_id=1,
+                entite_type='barriere',
+                message='Capacité maximale atteinte (entrée barrière).'
+            )
+            
+        time.sleep(3)
+        send_command("ENTRY_CLOSE")
         return Response({"message": "Entry Gate Opened", "status": "200_barrier_opened"}, status=status.HTTP_200_OK)
         
     return Response({"error": "Failed to communicate with Arduino"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -152,14 +175,30 @@ def exit_gate(request):
             place.statut = 'libre'
             place.save()
             
+            if place.id_sensor:
+                send_command(f"FREE_{place.id_sensor.id}")
+            
             success = send_command("EXIT_OPEN")
             if success:
+                time.sleep(3)
+                send_command("EXIT_CLOSE")
                 return Response({"message": "Exit Gate Opened", "fee_amount": fee}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Saved transaction but Arduino failed to open barrier", "fee_amount": fee}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def manual_gate(request):
+    """ Manual override for admins to control doors via frontend """
+    command = request.data.get('command')
+    if command in ["ENTRY_OPEN", "ENTRY_CLOSE", "EXIT_OPEN", "EXIT_CLOSE"]:
+        success = send_command(command)
+        if success:
+            return Response({"message": f"Command {command} sent"}, status=status.HTTP_200_OK)
+    return Response({"error": "Bad command or Arduino offline"}, status=status.HTTP_400_BAD_REQUEST)
 
 # ----------------- DASHBOARD / ADMIN ----------------- #
 @api_view(['GET'])

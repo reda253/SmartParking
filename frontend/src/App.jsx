@@ -145,9 +145,9 @@ export default function App() {
   const navItems = isAdmin ? adminNav : userNav;
   const pageTitles = {
     map: 'Carte en direct', active: 'Réservation active',
-    history: 'Historique', profile: 'Mon profil',
+    history: 'Historique des réservations', profile: 'Mon profil',
     overview: 'Aperçu administration', livemap: 'Carte en direct',
-    users: 'Gestion des utilisateurs', history: 'Historique des réservations'
+    users: 'Gestion des utilisateurs'
   };
 
   return (
