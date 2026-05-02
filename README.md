@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/logo.png" alt="ParkSense Logo" width="120"/>
+  <img src="docs/logo.png" alt="ParkSense Logo" width="400"/>
 
   # SmartParking — ParkSense
   ### Système de Gestion Intelligente de Parking
@@ -47,14 +47,6 @@
   <img src="docs/architecture.png" alt="Architecture globale" width="800"/>
 </div>
 
-```
-[HC-SR04 × 4]  →  Arduino UNO  ──USB Série 9600──→  Django API (port 8000)
-[LEDs + Servos] ←                                          ↕
-                                                      SQLite / MySQL
-                                          ←── REST polling 2s ───→
-                                                    React (port 5173)
-```
-
 **Principe cardinal :** l'Arduino ne prend aucune décision — il mesure et transmet.
 Toute la logique métier réside côté serveur Django.
 
@@ -80,20 +72,28 @@ Toute la logique métier réside côté serveur Django.
 
 ### Page d'authentification
 <div align="center">
-  <img src="docs/interface-signin-page.png" alt="Sign in" width="400"/>
+  <img src="docs/interface-signin-page.png" alt="Sign in" width="800"/>
 </div>
 
 ### Vue utilisateur — Carte en direct
+<div align="center">
 <img src="docs/interface-client.png" alt="Client map" width="800"/>
+</div>
 
 ### Vue administrateur — Aperçu KPIs
+<div align="center">
 <img src="docs/interface-admin.png" alt="Admin overview" width="800"/>
+</div>
 
 ### Vue administrateur — État des capteurs
+<div align="center">
 <img src="docs/interface-admin-capteur.png" alt="Sensors" width="800"/>
+</div>
 
 ### Schéma de câblage (Tinkercad)
-<img src="docs/schema-tinkercad.jpeg" alt="Tinkercad wiring" width="700"/>
+<div align="center">
+<img src="docs/schema-tinkercad.jpeg" alt="Tinkercad wiring" width="800"/>
+</div>
 
 ---
 
