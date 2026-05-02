@@ -10,4 +10,3 @@
 | TS-07 | Join Queue | User joins queue when parking is full | Backend adds user to `FileAttente`. Success toast appears. | Pass |
 | TS-08 | Notification | Spot becomes free (exit/cancel) | Backend triggers `notify_queue`. System logs mock SMS/Email to waitlisted user. | Pass |
 | TS-09 | Admin Control | Admin opens entry gate manually | Command `ENTRY_OPEN` sent to serial. Door opens without active reservation. | Pass |
-| TS-10 | Sensor Failure | Hardware disconnected | Admin Dashboard shows "DEFAILLANT" and last read timestamp is old. | Pass |
