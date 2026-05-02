@@ -1,3 +1,306 @@
-from django.shortcuts import render
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from django.utils import timezone
+from django.db import transaction as db_transaction
+from django.db.models import Sum
+from datetime import timedelta
+import math
+import time
+from .models import Place, Reservation, Transaction, Utilisateur, Tarif, Alerte, Sensor, FileAttente
+from .serializers import PlaceSerializer, ReservationSerializer, SensorSerializer
+from .serial_comm import send_command
 
-# Create your views here.
+# ----------------- AUTHENTICATION ROUTES ----------------- #
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+    name = request.data.get('name')
+    role = request.data.get('role', 'user')
+    
+    if not email or not password:
+        return Response({"error": "Email and password required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    if Utilisateur.objects.filter(username=email).exists():
+        return Response({"error": "L'utilisateur existe déjà"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    user = Utilisateur.objects.create_user(
+        username=email,
+        email=email,
+        password=password,
+        first_name=name,
+        role=role
+    )
+    return Response({"id": user.id, "email": user.email, "name": user.first_name, "role": user.role}, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+    
+    from django.contrib.auth import authenticate
+    user = authenticate(username=email, password=password)
+    if user:
+        return Response({"id": user.id, "email": user.email, "name": user.first_name, "role": user.role}, status=status.HTTP_200_OK)
+    return Response({"error": "Identifiants incorrects"}, status=status.HTTP_401_UNAUTHORIZED)
+
+# ----------------- PARKING SPOTS ----------------- #
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_spots(request):
+    """ Fetch all spots status (read from db which is updated by serial thread) """
+    places = Place.objects.all()
+    serializer = PlaceSerializer(places, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_sensors(request):
+    """ Fetch all hardware sensors and their linked physical states (For Admin Panel) """
+    sensors = Sensor.objects.all()
+    serializer = SensorSerializer(sensors, many=True)
+    return Response(serializer.data)
+
+# ----------------- RESERVATION & TRANSACTIONS ----------------- #
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reserve_spot(request):
+    """ Logic to reserve a spot """
+    place_id = request.data.get('place_id')
+    utilisateur_id = request.data.get('utilisateur_id')
+    hours = int(request.data.get('hours', 1))
+
+    if not place_id or not utilisateur_id:
+        return Response({"error": "place_id and utilisateur_id are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with db_transaction.atomic():
+            place = Place.objects.select_for_update().get(id=place_id)
+            if place.statut != 'libre':
+                return Response({"error": f"Place is currently {place.statut}"}, status=status.HTTP_409_CONFLICT)
+            
+            user, _ = Utilisateur.objects.get_or_create(id=utilisateur_id, defaults={'username': f'tempuser_{utilisateur_id}'})
+            
+            # Create Reservation
+            debut = timezone.now()
+            fin = debut + timedelta(hours=hours)
+            
+            reservation = Reservation.objects.create(
+                utilisateur_id=user,
+                place_id=place,
+                tarif_id=place.tarif_id,
+                debut=debut,
+                fin=fin,
+                statut='active',
+                montant=0  # Finalized on exit
+            )
+            
+            place.statut = 'reservee'
+            place.save()
+            
+            if place.id_sensor:
+                send_command(f"RESERVE_{place.id_sensor.id}")
+                
+            if Place.objects.filter(statut='libre').count() == 0:
+                Alerte.objects.create(
+                    type='parking_plein',
+                    entite_id=1,
+                    entite_type='barriere',
+                    message='Le parking est complet suite à une réservation.'
+                )
+            
+            return Response(ReservationSerializer(reservation).data, status=status.HTTP_201_CREATED)
+            
+    except Place.DoesNotExist:
+        return Response({"error": "Place not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_reservations(request):
+    user_id = request.query_params.get('utilisateur_id')
+    if user_id:
+        reservations = Reservation.objects.filter(utilisateur_id=user_id)
+    else:
+        reservations = Reservation.objects.all()
+    serializer = ReservationSerializer(reservations, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def cancel_reservation(request):
+    """ Cancel active reservation before entry """
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        with db_transaction.atomic():
+            reservation = Reservation.objects.select_for_update().filter(utilisateur_id=utilisateur_id, statut='active').first()
+            if not reservation:
+                return Response({"error": "No active reservation found"}, status=status.HTTP_404_NOT_FOUND)
+                
+            reservation.statut = 'annulee'
+            reservation.save()
+            
+            place = reservation.place_id
+            place.statut = 'libre'
+            place.save()
+            
+            if place.id_sensor:
+                send_command(f"FREE_{place.id_sensor.id}")
+                
+            notify_queue()
+            return Response({"message": "Reservation cancelled successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def join_queue(request):
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    user, _ = Utilisateur.objects.get_or_create(id=utilisateur_id, defaults={'username': f'tempuser_{utilisateur_id}'})
+    
+    if FileAttente.objects.filter(utilisateur_id=user, statut='en_attente').exists():
+        return Response({"error": "Vous êtes déjà dans la file d'attente"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    FileAttente.objects.create(utilisateur_id=user)
+    return Response({"message": "Vous avez rejoint la file d'attente. Nous vous notifierons dès qu'une place se libère."}, status=status.HTTP_201_CREATED)
+
+def notify_queue():
+    """ Check if there are people in queue and a spot is free """
+    free_spots = Place.objects.filter(statut='libre').exists()
+    if free_spots:
+        waiting = FileAttente.objects.filter(statut='en_attente').order_by('date_demande').first()
+        if waiting:
+            waiting.statut = 'notifie'
+            waiting.save()
+            # Mock Notification
+            user = waiting.utilisateur_id
+            print(f"NOTIF: Sending SMS/Email to {user.email} (Tel: {user.telephone}): Une place est libre pour vous !")
+            # In a real app: send_mail(...) or twilio_client.messages.create(...)
+
+# ----------------- BARRIER CONTROLS (Arduino Communication) ----------------- #
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def entry_gate(request):
+    """ Open entry barrier if user has a reservation """
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    reservation = Reservation.objects.filter(utilisateur_id=utilisateur_id, statut='active').first()
+    if not reservation:
+        return Response({"error": "No active reservation found for this user"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Let Arduino Open the Entry Gate
+    success = send_command("ENTRY_OPEN")
+    if success:
+        # Update debut time to actual entry time
+        reservation.debut = timezone.now()
+        reservation.save()
+        
+        if Place.objects.filter(statut='libre').count() == 0:
+            Alerte.objects.create(
+                type='parking_plein',
+                entite_id=1,
+                entite_type='barriere',
+                message='Capacité maximale atteinte (entrée barrière).'
+            )
+            
+        time.sleep(3)
+        send_command("ENTRY_CLOSE")
+        return Response({"message": "Entry Gate Opened", "status": "200_barrier_opened"}, status=status.HTTP_200_OK)
+        
+    return Response({"error": "Failed to communicate with Arduino"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def exit_gate(request):
+    """ Process exit: calculate fee, check out, open exit barrier """
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        with db_transaction.atomic():
+            reservation = Reservation.objects.select_for_update().filter(utilisateur_id=utilisateur_id, statut='active').first()
+            if not reservation:
+                return Response({"error": "No active reservation found for this user"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Calculate actual time spent
+            exit_time = timezone.now()
+            duration = exit_time - reservation.debut
+            hours_spent = math.ceil(duration.total_seconds() / 3600.0)
+            
+            if hours_spent < 1:
+                hours_spent = 1 # Minimum 1 hour charge
+                
+            fee = hours_spent * reservation.tarif_id.prix_heure
+            
+            # Generate Transaction
+            Transaction.objects.create(
+                reservation_id=reservation,
+                montant=fee,
+                statut_paiement='paye'
+            )
+            
+            # Close reservation
+            reservation.statut = 'expiree'
+            reservation.montant = fee
+            reservation.fin = exit_time
+            reservation.save()
+            
+            # Free the spot (if the Arduino ultrasonic sensor reads it as empty, the threading script will ensure it goes to 'libre')
+            # But we set it manually just in case
+            place = reservation.place_id
+            place.statut = 'libre'
+            place.save()
+            
+            if place.id_sensor:
+                send_command(f"FREE_{place.id_sensor.id}")
+            
+            success = send_command("EXIT_OPEN")
+            if success:
+                time.sleep(3)
+                send_command("EXIT_CLOSE")
+                notify_queue()
+                return Response({"message": "Exit Gate Opened", "fee_amount": fee}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Saved transaction but Arduino failed to open barrier", "fee_amount": fee}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def manual_gate(request):
+    """ Manual override for admins to control doors via frontend """
+    command = request.data.get('command')
+    if command in ["ENTRY_OPEN", "ENTRY_CLOSE", "EXIT_OPEN", "EXIT_CLOSE"]:
+        success = send_command(command)
+        if success:
+            return Response({"message": f"Command {command} sent"}, status=status.HTTP_200_OK)
+    return Response({"error": "Bad command or Arduino offline"}, status=status.HTTP_400_BAD_REQUEST)
+
+# ----------------- DASHBOARD / ADMIN ----------------- #
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_stats(request):
+    """ Return revenue & occupations """
+    total_revenue = Transaction.objects.filter(statut_paiement='paye').aggregate(Sum('montant'))['montant__sum'] or 0
+    occupied_count = Place.objects.filter(statut__in=['occupee', 'reservee']).count()
+    free_count = Place.objects.filter(statut='libre').count()
+    
+    return Response({
+        "revenue": float(total_revenue), 
+        "occupations": occupied_count,
+        "free_places": free_count
+    }, status=status.HTTP_200_OK)
+

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IMap, ILocation, IAlertTriangle, IWallet } from '../../utils/icons.jsx';
 import { Stat, LegendDot, ParkingLot, Modal } from '../../components/Shared.jsx';
 
-export default function UserMap({ user, spots, activeReservation, onReserve, onEndReservation, now, showToast, LOT_NAME, HOURLY_RATE, CURRENCY }) {
+export default function UserMap({ user, spots, activeReservation, onReserve, onEndReservation, now, showToast, LOT_NAME, HOURLY_RATE, CURRENCY, API_URL }) {
   const [selectedId, setSelectedId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [duration, setDuration] = useState(1);
@@ -13,7 +13,7 @@ export default function UserMap({ user, spots, activeReservation, onReserve, onE
   const occupancyRate = Math.round(((totalSpots - freeSpots) / totalSpots) * 100);
   const isFull = freeSpots === 0;
   const selectedSpot = spots.find(s => s.id === selectedId);
-  const suggestedSpot = spots.find(s => s.status === 'free');
+  const suggestedSpot = [...spots].filter(s => s.status === 'free').sort((a,b) => b.label.localeCompare(a.label))[0];
 
   useEffect(() => {
     if (isFull) {
@@ -48,22 +48,54 @@ export default function UserMap({ user, spots, activeReservation, onReserve, onE
   return (
     <>
       {isFull && (
-        <div className="alert-banner" style={{ background: 'linear-gradient(135deg, var(--red-50), #FEF2F2)', border: '1px solid var(--red-200)', borderRadius: 'var(--r-md)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, color: 'var(--red-700)', marginBottom: 16 }}>
-          <IAlertTriangle size={20} />
-          <div><strong>Parking saturé</strong> — Plus aucune place disponible. Veuillez réessayer plus tard.</div>
+        <div className="alert-banner-top" style={{ 
+          position: 'sticky', top: 0, zIndex: 100,
+          background: 'var(--red-600)', color: 'white', 
+          padding: '12px 24px', textAlign: 'center', fontWeight: 700,
+          boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)',
+          margin: '-24px -24px 24px -24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+        }}>
+          <IAlertTriangle size={18} />
+          DÉSOLÉ : LE PARKING EST ACTUELLEMENT COMPLET
+          <button className="btn btn-white" style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 12, borderRadius: 8 }} onClick={async () => {
+            try {
+              const response = await fetch(`${API_URL.replace('/api', '/api')}/join_queue/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ utilisateur_id: user?.id || 1 })
+              });
+              const data = await response.json();
+              if (response.ok) showToast(data.message, 'ok');
+              else showToast(data.error || 'Erreur', 'err');
+            } catch (e) {
+              showToast('Erreur serveur', 'err');
+            }
+          }}>Rejoindre la file d'attente</button>
         </div>
       )}
 
       {!activeReservation && suggestedSpot && !isFull && (
-        <div className="suggestion-pill" onClick={() => handleSelect(suggestedSpot.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'linear-gradient(135deg, var(--blue-50), white)', border: '1.5px solid var(--blue-200)', borderRadius: 'var(--r-md)', cursor: 'pointer', marginBottom: 16 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--blue-100)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ILocation size={20} stroke="var(--blue-600)" />
+        <div className="suggestion-pill" onClick={() => handleSelect(suggestedSpot.id)} style={{ 
+          display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', 
+          background: 'white', border: '1px solid var(--blue-100)', 
+          borderRadius: 16, cursor: 'pointer', marginBottom: 24,
+          boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.08)',
+          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--blue-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ILocation size={24} stroke="var(--blue-600)" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>Place suggérée : <strong>{suggestedSpot.label}</strong></div>
-            <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>La plus proche de l'entrée — disponible immédiatement</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Suggestion Intelligente</div>
+            <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>Réserver la place {suggestedSpot.label}</div>
           </div>
-          <span className="badge badge-blue">Réserver →</span>
+          <div style={{ background: 'var(--blue-600)', color: 'white', padding: '8px 16px', borderRadius: 99, fontSize: 13, fontWeight: 700 }}>
+            Vite ! →
+          </div>
         </div>
       )}
 
