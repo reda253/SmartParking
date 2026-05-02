@@ -11,7 +11,7 @@ export default function AuthPage({ onLogin }) {
   const [role, setRole] = useState('user');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in all required fields');
@@ -22,13 +22,33 @@ export default function AuthPage({ onLogin }) {
       return;
     }
 
-    // Simulate login
-    onLogin({
-      name: name || email.split('@')[0],
-      email: email,
-      role: role,
-      plate: plate || 'XX-0000'
-    });
+    try {
+      const endpoint = mode === 'signup' ? 'register' : 'login';
+      const bodyPayload = mode === 'signup' ? { email, password, name, role } : { email, password };
+      
+      const res = await fetch(`http://127.0.0.1:8000/api/auth/${endpoint}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erreur serveur');
+        return;
+      }
+      
+      // Pass the real DB user back
+      onLogin({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        plate: plate || 'XX-0000'
+      });
+    } catch (err) {
+      setError('Erreur de connexion au serveur');
+    }
   };
 
   return (
@@ -142,6 +162,18 @@ export default function AuthPage({ onLogin }) {
             <IChev size={20} sw={2.5} />
           </button>
         </form>
+
+        <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--ink-200)' }}>
+          <div style={{ fontSize: 13, color: 'var(--ink-500)', textAlign: 'center', marginBottom: 12, fontWeight: 700 }}>Test Rapide (1-Click Login)</div>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn" style={{ flex: 1, background: 'var(--ink-100)', color: 'var(--ink-900)', fontSize: 13, padding: 8 }} onClick={(e) => { e.preventDefault(); onLogin({id: 1, name: 'Admin Testing', email: 'admin@demo.com', role: 'admin', plate: 'AD-1111'}); }}>
+              Login Admin
+            </button>
+            <button className="btn" style={{ flex: 1, background: 'var(--ink-100)', color: 'var(--ink-900)', fontSize: 13, padding: 8 }} onClick={(e) => { e.preventDefault(); onLogin({id: 2, name: 'Client Testing', email: 'client@demo.com', role: 'user', plate: 'CL-9999'}); }}>
+              Login Client
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
