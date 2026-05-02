@@ -8,8 +8,8 @@ from django.db.models import Sum
 from datetime import timedelta
 import math
 import time
-from .models import Place, Reservation, Transaction, Utilisateur, Tarif, Alerte
-from .serializers import PlaceSerializer, ReservationSerializer
+from .models import Place, Reservation, Transaction, Utilisateur, Tarif, Alerte, Sensor, FileAttente
+from .serializers import PlaceSerializer, ReservationSerializer, SensorSerializer
 from .serial_comm import send_command
 
 # ----------------- AUTHENTICATION ROUTES ----------------- #
@@ -55,6 +55,14 @@ def get_spots(request):
     """ Fetch all spots status (read from db which is updated by serial thread) """
     places = Place.objects.all()
     serializer = PlaceSerializer(places, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_sensors(request):
+    """ Fetch all hardware sensors and their linked physical states (For Admin Panel) """
+    sensors = Sensor.objects.all()
+    serializer = SensorSerializer(sensors, many=True)
     return Response(serializer.data)
 
 # ----------------- RESERVATION & TRANSACTIONS ----------------- #
@@ -145,9 +153,38 @@ def cancel_reservation(request):
             if place.id_sensor:
                 send_command(f"FREE_{place.id_sensor.id}")
                 
+            notify_queue()
             return Response({"message": "Reservation cancelled successfully"}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def join_queue(request):
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    user, _ = Utilisateur.objects.get_or_create(id=utilisateur_id, defaults={'username': f'tempuser_{utilisateur_id}'})
+    
+    if FileAttente.objects.filter(utilisateur_id=user, statut='en_attente').exists():
+        return Response({"error": "Vous êtes déjà dans la file d'attente"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    FileAttente.objects.create(utilisateur_id=user)
+    return Response({"message": "Vous avez rejoint la file d'attente. Nous vous notifierons dès qu'une place se libère."}, status=status.HTTP_201_CREATED)
+
+def notify_queue():
+    """ Check if there are people in queue and a spot is free """
+    free_spots = Place.objects.filter(statut='libre').exists()
+    if free_spots:
+        waiting = FileAttente.objects.filter(statut='en_attente').order_by('date_demande').first()
+        if waiting:
+            waiting.statut = 'notifie'
+            waiting.save()
+            # Mock Notification
+            user = waiting.utilisateur_id
+            print(f"NOTIF: Sending SMS/Email to {user.email} (Tel: {user.telephone}): Une place est libre pour vous !")
+            # In a real app: send_mail(...) or twilio_client.messages.create(...)
 
 # ----------------- BARRIER CONTROLS (Arduino Communication) ----------------- #
 @api_view(['POST'])
@@ -233,6 +270,7 @@ def exit_gate(request):
             if success:
                 time.sleep(3)
                 send_command("EXIT_CLOSE")
+                notify_queue()
                 return Response({"message": "Exit Gate Opened", "fee_amount": fee}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Saved transaction but Arduino failed to open barrier", "fee_amount": fee}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

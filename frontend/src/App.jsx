@@ -7,6 +7,7 @@ import AdminOverview from './pages/Admin/AdminOverview.jsx';
 import AdminLiveMap from './pages/Admin/AdminLiveMap.jsx';
 import AdminUsers from './pages/Admin/AdminUsers.jsx';
 import AdminHistory from './pages/Admin/AdminHistory.jsx';
+import AdminSensors from './pages/Admin/AdminSensors.jsx';
 import { ICar, IMap, IClock, IHistory, IUser, IHome, IUsers, ICog, ICheck } from './utils/icons.jsx';
 
 const HOURLY_RATE = 5;
@@ -172,7 +173,8 @@ export default function App() {
     { id: 'overview', label: 'Aperçu', icon: IHome },
     { id: 'livemap', label: 'Carte en direct', icon: IMap },
     { id: 'users', label: 'Utilisateurs', icon: IUsers },
-    { id: 'history', label: 'Historique', icon: IHistory }
+    { id: 'history', label: 'Historique', icon: IHistory },
+    { id: 'sensors', label: 'Capteurs', icon: ICog }
   ];
 
   const navItems = isAdmin ? adminNav : userNav;
@@ -180,7 +182,7 @@ export default function App() {
     map: 'Carte en direct', active: 'Réservation active',
     history: 'Historique des réservations', profile: 'Mon profil',
     overview: 'Aperçu administration', livemap: 'Carte en direct',
-    users: 'Gestion des utilisateurs'
+    users: 'Gestion des utilisateurs', sensors: 'État des Capteurs'
   };
 
   return (
@@ -237,6 +239,7 @@ export default function App() {
               user={user} spots={spots} activeReservation={activeReservation}
               onReserve={handleReserve} onEndReservation={handleEndReservation}
               now={currentTime} showToast={showToast} LOT_NAME={LOT_NAME} HOURLY_RATE={HOURLY_RATE} CURRENCY={CURRENCY}
+              API_URL={API_URL}
             />
           )}
           {!isAdmin && currentTab === 'active' && (
@@ -273,6 +276,7 @@ export default function App() {
           {isAdmin && currentTab === 'livemap' && <AdminLiveMap spots={spots} setSpots={setSpots} />}
           {isAdmin && currentTab === 'users' && <AdminUsers spots={spots} />}
           {isAdmin && currentTab === 'history' && <AdminHistory CURRENCY={CURRENCY} />}
+          {isAdmin && currentTab === 'sensors' && <AdminSensors />}
         </div>
       </main>
 

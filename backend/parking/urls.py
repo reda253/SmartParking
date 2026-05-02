@@ -8,7 +8,9 @@ urlpatterns = [
 
     # Spots & Reservations
     path('spots/', views.get_spots, name='get_spots'),
+    path('sensors/', views.get_sensors, name='get_sensors'),
     path('reserve/', views.reserve_spot, name='reserve_spot'),
+    path('join_queue/', views.join_queue, name='join_queue'),
     path('reservations/', views.get_reservations, name='get_reservations'),
     path('cancel/', views.cancel_reservation, name='cancel_reservation'),
     

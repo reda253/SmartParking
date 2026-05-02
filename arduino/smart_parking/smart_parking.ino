@@ -1,3 +1,11 @@
+/**
+ * SMART PARKING SYSTEM - Group X
+ * FST Tanger - LSI S2
+ * Technologies Arduino et Systèmes embarqués
+ * 
+ * Hardware: Arduino Uno, HC-SR04, SG90 Servos, LEDs
+ */
+
 #include <Servo.h>
 
 // ── Ultrasonic Sensor Pins ───────────────────────────────────────

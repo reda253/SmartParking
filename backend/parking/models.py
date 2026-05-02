@@ -81,3 +81,8 @@ class Alerte(models.Model):
     message = models.CharField(max_length=255)
     date_alerte = models.DateTimeField(auto_now_add=True)
     vue = models.BooleanField(default=False)
+
+class FileAttente(models.Model):
+    utilisateur_id = models.ForeignKey(Utilisateur, on_delete=models.CASCADE)
+    date_demande = models.DateTimeField(auto_now_add=True)
+    statut = models.CharField(max_length=20, default='en_attente') # en_attente, notifie, expire
