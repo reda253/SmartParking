@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stat, LegendDot, ParkingLot } from '../../components/Shared.jsx';
 
 export default function AdminOverview({ spots, CURRENCY }) {
-  const total = spots.length;
+  const total = spots.length || 1;
   const free = spots.filter(s => s.status === 'free').length;
   const occupied = spots.filter(s => s.status === 'occupied').length;
   const reserved = spots.filter(s => s.status === 'reserved').length;
   const occupancy = Math.round(((occupied + reserved) / total) * 100);
-  const revenue = 4580;
+  
+  const [revenue, setRevenue] = useState(0);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/stats/')
+      .then(r => r.json())
+      .then(data => setRevenue(data.revenue || 0))
+      .catch(e => console.error(e));
+  }, []);
 
   return (
     <>

@@ -12,27 +12,12 @@ const HOURLY_RATE = 5;
 const CURRENCY = 'MAD';
 const LOT_NAME = 'Parking Central Tanger';
 
-function generateSpots(n) {
-  const spots = [];
-  for (let i = 0; i < n; i++) {
-    spots.push({
-      id: `spot-${i}`,
-      label: `A${String(i + 1).padStart(2, '0')}`,
-      status: 'free',
-      online: false,
-      userId: null,
-      plate: null,
-      userName: null,
-      startedAt: null,
-      until: null
-    });
-  }
-  return spots;
-}
+// API backend URL mapping
+const API_URL = 'http://127.0.0.1:8000/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [spots, setSpots] = useState(() => generateSpots(4));
+  const [spots, setSpots] = useState([]);
   const [activeReservation, setActiveReservation] = useState(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [toast, setToast] = useState(null);
@@ -41,9 +26,34 @@ export default function App() {
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
-    // Arduino listener placeholder
-    // In the future, this is where you will connect to your Arduino API or WebSocket
-    // to update the 'spots' state in real-time.
+    let isMounted = true;
+    const fetchSpots = async () => {
+      try {
+        const response = await fetch(`${API_URL}/spots/`);
+        if (!response.ok) throw new Error('Network error');
+        const data = await response.json();
+        
+        if (isMounted) {
+          const mappedSpots = data.map(dbPlace => ({
+            id: dbPlace.id,
+            label: `A${String(dbPlace.numero % 100).padStart(2, '0')}`,
+            status: dbPlace.statut === 'libre' ? 'free' : (dbPlace.statut === 'reservee' ? 'reserved' : 'occupied'),
+            online: dbPlace.sensor && dbPlace.sensor.statut === 'actif',
+            userId: null, plate: null, userName: null, startedAt: null, until: null
+          }));
+          setSpots(mappedSpots);
+        }
+      } catch (error) {
+        console.error("Error fetching spots:", error);
+      }
+    };
+    
+    fetchSpots();
+    const intervalId = setInterval(fetchSpots, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   useEffect(() => {
@@ -57,31 +67,60 @@ export default function App() {
     setToast({ msg, type });
   };
 
-  const handleReserve = (spotId, duration) => {
-    const spotIndex = spots.findIndex(s => s.id === spotId);
-    const spot = spots[spotIndex];
-    const startedAt = Date.now();
-    const until = startedAt + duration * 3600000;
-    const amount = duration * HOURLY_RATE;
+  const handleReserve = async (spotId, duration) => {
+    try {
+      const response = await fetch(`${API_URL}/reserve/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          place_id: spotId, 
+          utilisateur_id: user?.id || 1, 
+          hours: duration 
+        })
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        showToast(data.error || 'Erreur réservation', 'err');
+        return;
+      }
+      
+      const spotIndex = spots.findIndex(s => s.id === spotId);
+      const spot = spots[spotIndex];
+      const startedAt = Date.parse(data.debut) || Date.now();
+      const until = Date.parse(data.fin) || (startedAt + duration * 3600000);
+      const amount = data.montant || (duration * HOURLY_RATE);
 
-    setActiveReservation({
-      spotId, spotIndex, label: spot.label,
-      plate: user?.plate || 'AL-4821',
-      startedAt, until, amount
-    });
-
-    setSpots(prev => prev.map((s, i) =>
-      i === spotIndex ? { ...s, status: 'reserved', userName: user?.name, plate: user?.plate, startedAt, until } : s
-    ));
+      setActiveReservation({
+        spotId, spotIndex, label: spot?.label || spotId,
+        plate: user?.plate || 'AL-4821',
+        startedAt, until, amount
+      });
+    } catch (error) {
+      showToast('Erreur serveur de réservation', 'err');
+    }
   };
 
-  const handleEndReservation = () => {
+  const handleEndReservation = async () => {
     if (activeReservation) {
-      setSpots(prev => prev.map((s, i) =>
-        i === activeReservation.spotIndex ? { ...s, status: 'free', userName: null, plate: null, startedAt: null, until: null } : s
-      ));
-      setActiveReservation(null);
-      showToast('Réservation terminée', 'ok');
+      try {
+        const response = await fetch(`${API_URL}/exit/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ utilisateur_id: user?.id || 1 })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+          showToast(data.error || 'Erreur lors de la sortie', 'err');
+          return;
+        }
+
+        setActiveReservation(null);
+        showToast(`Réservation terminée. Facture: ${data.fee_amount || data.fee} ${CURRENCY}`, 'ok');
+      } catch(e) {
+        showToast('Erreur serveur (Sortie)', 'err');
+      }
     }
   };
 
@@ -173,8 +212,15 @@ export default function App() {
                 <div style={{ padding: 28, textAlign: 'center' }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-500)', marginBottom: 8 }}>Réservation en cours</div>
                   <div style={{ fontSize: 48, fontWeight: 800 }}>Place {activeReservation.label}</div>
-                  <div style={{ marginTop: 20 }}>
-                    <button className="btn btn-red" style={{ background: 'var(--red-50)', color: 'var(--red-600)', padding: '10px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--red-100)', fontWeight: 700 }} onClick={handleEndReservation}>Terminer la réservation</button>
+                  <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button className="btn btn-blue" style={{ background: 'var(--blue-50)', color: 'var(--blue-600)', padding: '10px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--blue-100)', fontWeight: 700 }} onClick={async () => {
+                      const response = await fetch(`${API_URL}/entry/`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ utilisateur_id: user?.id || 1 })
+                      });
+                      if(response.ok) showToast('Barrière d\'entrée ouverte !', 'ok');
+                      else showToast('Erreur de la barrière', 'err');
+                    }}>Entrer (Simuler Barrière)</button>
+                    <button className="btn btn-red" style={{ background: 'var(--red-50)', color: 'var(--red-600)', padding: '10px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--red-100)', fontWeight: 700 }} onClick={handleEndReservation}>Sortir et Payer</button>
                   </div>
                 </div>
               ) : (
