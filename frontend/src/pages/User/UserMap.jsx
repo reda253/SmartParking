@@ -13,7 +13,7 @@ export default function UserMap({ user, spots, activeReservation, onReserve, onE
   const occupancyRate = Math.round(((totalSpots - freeSpots) / totalSpots) * 100);
   const isFull = freeSpots === 0;
   const selectedSpot = spots.find(s => s.id === selectedId);
-  const suggestedSpot = spots.find(s => s.status === 'free');
+  const suggestedSpot = [...spots].filter(s => s.status === 'free').sort((a,b) => b.label.localeCompare(a.label))[0];
 
   useEffect(() => {
     if (isFull) {

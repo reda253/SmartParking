@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AuthPage from './pages/Auth/AuthPage.jsx';
 import UserMap from './pages/User/UserMap.jsx';
 import UserProfile from './pages/User/UserProfile.jsx';
+import UserHistory from './pages/User/UserHistory.jsx';
 import AdminOverview from './pages/Admin/AdminOverview.jsx';
 import AdminLiveMap from './pages/Admin/AdminLiveMap.jsx';
 import AdminUsers from './pages/Admin/AdminUsers.jsx';
@@ -22,6 +23,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [toast, setToast] = useState(null);
   const [currentTab, setCurrentTab] = useState('map');
+  const [isPaying, setIsPaying] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
@@ -98,6 +100,37 @@ export default function App() {
       });
     } catch (error) {
       showToast('Erreur serveur de réservation', 'err');
+    }
+  };
+
+  const handlePaymentSimulation = () => {
+    setIsPaying(true);
+    setTimeout(() => {
+      setIsPaying(false);
+      handleEndReservation();
+    }, 2500);
+  };
+
+  const handleCancelReservation = async () => {
+    if (activeReservation) {
+      try {
+        const response = await fetch(`${API_URL}/cancel/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ utilisateur_id: user?.id || 1 })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+          showToast(data.error || 'Erreur lors de l\'annulation', 'err');
+          return;
+        }
+
+        setActiveReservation(null);
+        showToast(`Réservation annulée.`, 'ok');
+      } catch(e) {
+        showToast('Erreur serveur (Annulation)', 'err');
+      }
     }
   };
 
@@ -220,7 +253,8 @@ export default function App() {
                       if(response.ok) showToast('Barrière d\'entrée ouverte !', 'ok');
                       else showToast('Erreur de la barrière', 'err');
                     }}>Entrer (Simuler Barrière)</button>
-                    <button className="btn btn-red" style={{ background: 'var(--red-50)', color: 'var(--red-600)', padding: '10px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--red-100)', fontWeight: 700 }} onClick={handleEndReservation}>Sortir et Payer</button>
+                    <button className="btn btn-red" style={{ background: 'var(--red-50)', color: 'var(--red-600)', padding: '10px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--red-100)', fontWeight: 700 }} onClick={handlePaymentSimulation}>Sortir et Payer</button>
+                    <button className="btn btn-secondary" style={{ padding: '10px 20px', borderRadius: 'var(--r-md)', fontWeight: 700 }} onClick={handleCancelReservation}>Annuler</button>
                   </div>
                 </div>
               ) : (
@@ -234,6 +268,7 @@ export default function App() {
           )}
 
           {!isAdmin && currentTab === 'profile' && <UserProfile user={user} onLogout={() => setUser(null)} />}
+          {!isAdmin && currentTab === 'history' && <UserHistory user={user} CURRENCY={CURRENCY} />}
           {isAdmin && currentTab === 'overview' && <AdminOverview spots={spots} CURRENCY={CURRENCY} />}
           {isAdmin && currentTab === 'livemap' && <AdminLiveMap spots={spots} setSpots={setSpots} />}
           {isAdmin && currentTab === 'users' && <AdminUsers spots={spots} />}
@@ -245,6 +280,17 @@ export default function App() {
         <div className={`toast ${toast.type === 'err' ? 'err' : ''}`} style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: toast.type === 'err' ? 'var(--red-600)' : 'var(--ink-900)', color: 'white', padding: '12px 22px', borderRadius: 999, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, zIndex: 999 }}>
           <ICheck size={16} />
           {toast.msg}
+        </div>
+      )}
+
+      {isPaying && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', padding: 40, borderRadius: 24, textAlign: 'center', width: 320, boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }}>
+             <div className="spinner" style={{ width: 48, height: 48, border: '4px solid var(--blue-100)', borderTopColor: 'var(--blue-600)', borderRadius: '50%', margin: '0 auto 24px', animation: 'spin 1s linear infinite' }} />
+             <div style={{ fontSize: 18, fontWeight: 800 }}>Traitement sécurisé...</div>
+             <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 8 }}>Veuillez patienter pendant le paiement bancaire.</div>
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
     </div>

@@ -98,6 +98,34 @@ def get_reservations(request):
     serializer = ReservationSerializer(reservations, many=True)
     return Response(serializer.data)
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def cancel_reservation(request):
+    """ Cancel active reservation before entry """
+    utilisateur_id = request.data.get('utilisateur_id')
+    if not utilisateur_id:
+        return Response({"error": "utilisateur_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        with db_transaction.atomic():
+            reservation = Reservation.objects.select_for_update().filter(utilisateur_id=utilisateur_id, statut='active').first()
+            if not reservation:
+                return Response({"error": "No active reservation found"}, status=status.HTTP_404_NOT_FOUND)
+                
+            reservation.statut = 'annulee'
+            reservation.save()
+            
+            place = reservation.place_id
+            place.statut = 'libre'
+            place.save()
+            
+            if place.id_sensor:
+                send_command(f"FREE_{place.id_sensor.id}")
+                
+            return Response({"message": "Reservation cancelled successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # ----------------- BARRIER CONTROLS (Arduino Communication) ----------------- #
 @api_view(['POST'])
 @permission_classes([AllowAny])
