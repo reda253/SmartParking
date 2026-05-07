@@ -1,56 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ParkingLot, LegendDot, Modal } from '../../components/Shared.jsx';
-import { IAlertTriangle, ICheck, ICog, ICar } from '../../utils/icons.jsx';
+import { ICar } from '../../utils/icons.jsx';
+
+const API_URL = 'http://127.0.0.1:8000/api';
 
 export default function AdminLiveMap({ spots, setSpots }) {
   const [selectedId, setSelectedId] = useState(null);
+  const [sensors, setSensors] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
   const selectedSpot = spots.find(s => s.id === selectedId);
 
-  const toggleStatus = () => {
-    setSpots(prev => prev.map(s => {
-      if (s.id === selectedId) {
-        return {
-          ...s,
-          status: s.status === 'free' ? 'occupied' : 'free',
-          plate: s.status === 'free' ? 'ADMIN-OVR' : null,
-          userName: s.status === 'free' ? 'Admin Override' : null
-        };
-      }
-      return s;
-    }));
-    setSelectedId(null);
+  useEffect(() => {
+    let mounted = true;
+    const fetchSensors = () => {
+      fetch(`${API_URL}/sensors/`)
+        .then(r => r.json())
+        .then(d => { if (mounted) setSensors(d); })
+        .catch(() => {});
+    };
+    fetchSensors();
+    const i = setInterval(fetchSensors, 3000);
+    return () => { mounted = false; clearInterval(i); };
+  }, []);
+
+  useEffect(() => {
+    if (feedback) {
+      const t = setTimeout(() => setFeedback(null), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [feedback]);
+
+  const sensorIdForSpot = (spot) => {
+    if (!spot) return null;
+    const match = sensors.find(sn => sn.id === spot.sensorId) || sensors[spots.findIndex(s => s.id === spot.id)];
+    return match?.id ?? null;
   };
 
-  const toggleSensor = () => {
-    setSpots(prev => prev.map(s => {
-      if (s.id === selectedId) {
-        return { ...s, online: !s.online };
-      }
-      return s;
-    }));
-    setSelectedId(null);
+  const apiPost = async (path, body) => {
+    setBusy(true);
+    try {
+      const r = await fetch(`${API_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      return data;
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const clearReservation = () => {
-    setSpots(prev => prev.map(s => {
-      if (s.id === selectedId) {
-        return { ...s, status: 'free', plate: null, userName: null, startedAt: null, until: null };
-      }
-      return s;
-    }));
-    setSelectedId(null);
+  const forceStatus = async (newStatut) => {
+    if (!selectedSpot) return;
+    try {
+      await apiPost('/admin/force_status/', { place_id: selectedSpot.id, statut: newStatut });
+      setSpots(prev => prev.map(s => s.id === selectedSpot.id ? {
+        ...s,
+        status: newStatut === 'libre' ? 'free' : (newStatut === 'reservee' ? 'reserved' : 'occupied'),
+        plate: newStatut === 'libre' ? null : (s.plate || 'ADMIN-OVR'),
+        userName: newStatut === 'libre' ? null : (s.userName || 'Admin Override'),
+      } : s));
+      setFeedback({ type: 'ok', msg: `Place ${selectedSpot.label} → ${newStatut}` });
+      setSelectedId(null);
+    } catch (e) {
+      setFeedback({ type: 'err', msg: e.message });
+    }
+  };
+
+  const clearReservation = async () => {
+    if (!selectedSpot) return;
+    try {
+      const data = await apiPost('/admin/clear_reservation/', { place_id: selectedSpot.id });
+      setSpots(prev => prev.map(s => s.id === selectedSpot.id ? {
+        ...s, status: 'free', plate: null, userName: null, startedAt: null, until: null,
+      } : s));
+      setFeedback({ type: 'ok', msg: `${data.cancelled_reservations || 0} réservation(s) annulée(s)` });
+      setSelectedId(null);
+    } catch (e) {
+      setFeedback({ type: 'err', msg: e.message });
+    }
+  };
+
+  const toggleSensor = async () => {
+    if (!selectedSpot) return;
+    const sid = sensorIdForSpot(selectedSpot);
+    if (!sid) {
+      setFeedback({ type: 'err', msg: 'Aucun capteur lié à cette place' });
+      return;
+    }
+    try {
+      const data = await apiPost('/admin/toggle_sensor/', { sensor_id: sid });
+      setSpots(prev => prev.map(s => s.id === selectedSpot.id ? { ...s, online: data.statut === 'actif' } : s));
+      setFeedback({ type: 'ok', msg: `Capteur ${sid} → ${data.statut}` });
+      setSelectedId(null);
+    } catch (e) {
+      setFeedback({ type: 'err', msg: e.message });
+    }
   };
 
   const triggerGate = async (command) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/manual_gate/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command })
-      });
-      if (!response.ok) alert('Erreur serveur: Arduino hors ligne ?');
+      await apiPost('/manual_gate/', { command });
+      setFeedback({ type: 'ok', msg: `Commande ${command} envoyée` });
     } catch (e) {
-      alert("Erreur de connexion au backend.");
+      setFeedback({ type: 'err', msg: e.message });
     }
   };
 
@@ -64,15 +121,15 @@ export default function AdminLiveMap({ spots, setSpots }) {
           <div style={{ border: '1px solid var(--blue-200)', padding: 12, borderRadius: 8, flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--blue-700)' }}>Porte d'Entrée</div>
             <div style={{ display: 'flex', gap: 8 }}>
-               <button className="btn btn-blue" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_OPEN')}>Ouvrir</button>
-               <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_CLOSE')}>Fermer</button>
+              <button className="btn btn-blue" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_OPEN')} disabled={busy}>Ouvrir</button>
+              <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('ENTRY_CLOSE')} disabled={busy}>Fermer</button>
             </div>
           </div>
           <div style={{ border: '1px solid var(--red-200)', padding: 12, borderRadius: 8, flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--red-700)' }}>Porte de Sortie</div>
             <div style={{ display: 'flex', gap: 8 }}>
-               <button className="btn btn-red" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_OPEN')}>Ouvrir</button>
-               <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_CLOSE')}>Fermer</button>
+              <button className="btn btn-red" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_OPEN')} disabled={busy}>Ouvrir</button>
+              <button className="btn btn-secondary" style={{ flex: 1, padding: 8 }} onClick={() => triggerGate('EXIT_CLOSE')} disabled={busy}>Fermer</button>
             </div>
           </div>
         </div>
@@ -88,7 +145,7 @@ export default function AdminLiveMap({ spots, setSpots }) {
           </div>
         </div>
         <div className="card-body">
-          <ParkingLot spots={spots} selectedId={selectedId} onSelect={id => setSelectedId(id)} />
+          <ParkingLot spots={spots} selectedId={selectedId} onSelect={id => setSelectedId(id)} selectableAll />
         </div>
       </div>
 
@@ -125,12 +182,14 @@ export default function AdminLiveMap({ spots, setSpots }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 24 }}>
               <button
                 className="btn btn-secondary"
-                onClick={toggleStatus}
+                disabled={busy}
+                onClick={() => forceStatus(selectedSpot.status === 'free' ? 'occupee' : 'libre')}
               >
                 {selectedSpot.status === 'free' ? 'Forcer Occupation' : 'Libérer Place'}
               </button>
               <button
                 className="btn btn-secondary"
+                disabled={busy}
                 onClick={toggleSensor}
                 style={{ color: selectedSpot.online ? 'var(--red-600)' : 'var(--green-600)', borderColor: selectedSpot.online ? 'var(--red-200)' : 'var(--green-200)' }}
               >
@@ -140,6 +199,7 @@ export default function AdminLiveMap({ spots, setSpots }) {
                 <button
                   className="btn btn-red"
                   style={{ gridColumn: '1 / -1' }}
+                  disabled={busy}
                   onClick={clearReservation}
                 >
                   Annuler Réservation Client
@@ -148,6 +208,16 @@ export default function AdminLiveMap({ spots, setSpots }) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {feedback && (
+        <div style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: feedback.type === 'err' ? 'var(--red-600)' : 'var(--ink-900)',
+          color: 'white', padding: '12px 22px', borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 9999
+        }}>
+          {feedback.msg}
+        </div>
       )}
     </>
   );

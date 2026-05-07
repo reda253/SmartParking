@@ -39,6 +39,7 @@ export default function App() {
         if (isMounted) {
           const mappedSpots = data.map(dbPlace => ({
             id: dbPlace.id,
+            sensorId: dbPlace.sensor ? dbPlace.sensor.id : null,
             label: `A${String(dbPlace.numero % 100).padStart(2, '0')}`,
             status: dbPlace.statut === 'libre' ? 'free' : (dbPlace.statut === 'reservee' ? 'reserved' : 'occupied'),
             online: dbPlace.sensor && dbPlace.sensor.statut === 'actif',

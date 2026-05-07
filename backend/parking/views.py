@@ -9,7 +9,7 @@ from datetime import timedelta
 import math
 import time
 from .models import Place, Reservation, Transaction, Utilisateur, Tarif, Alerte, Sensor, FileAttente
-from .serializers import PlaceSerializer, ReservationSerializer, SensorSerializer
+from .serializers import PlaceSerializer, ReservationSerializer, SensorSerializer, UtilisateurSerializer
 from .serial_comm import send_command
 
 # ----------------- AUTHENTICATION ROUTES ----------------- #
@@ -293,14 +293,108 @@ def manual_gate(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_stats(request):
-    """ Return revenue & occupations """
+    """ Return revenue & occupations (admin overview) """
     total_revenue = Transaction.objects.filter(statut_paiement='paye').aggregate(Sum('montant'))['montant__sum'] or 0
-    occupied_count = Place.objects.filter(statut__in=['occupee', 'reservee']).count()
+    occupied_count = Place.objects.filter(statut='occupee').count()
+    reserved_count = Place.objects.filter(statut='reservee').count()
     free_count = Place.objects.filter(statut='libre').count()
-    
+    total_places = Place.objects.count() or 1
+    occupancy_rate = round(((occupied_count + reserved_count) / total_places) * 100)
+
+    week_ago = timezone.now() - timedelta(days=7)
+    week_revenue = Transaction.objects.filter(
+        statut_paiement='paye', date_paiement__gte=week_ago
+    ).aggregate(Sum('montant'))['montant__sum'] or 0
+
+    active_reservations = Reservation.objects.filter(statut='active').count()
+    queue_length = FileAttente.objects.filter(statut='en_attente').count()
+
     return Response({
-        "revenue": float(total_revenue), 
+        "revenue": float(total_revenue),
+        "revenue_week": float(week_revenue),
         "occupations": occupied_count,
-        "free_places": free_count
+        "reserved": reserved_count,
+        "free_places": free_count,
+        "total_places": total_places,
+        "occupancy_rate": occupancy_rate,
+        "active_reservations": active_reservations,
+        "queue_length": queue_length,
     }, status=status.HTTP_200_OK)
+
+
+# ----------------- ADMIN ENDPOINTS ----------------- #
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_users(request):
+    """ Admin: list all users """
+    users = Utilisateur.objects.all().order_by('-date_joined')
+    serializer = UtilisateurSerializer(users, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_force_place_status(request):
+    """ Admin override: force a place status (libre/occupee/reservee) """
+    place_id = request.data.get('place_id')
+    new_statut = request.data.get('statut')
+    if not place_id or new_statut not in ['libre', 'occupee', 'reservee']:
+        return Response({"error": "place_id and valid statut required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with db_transaction.atomic():
+            place = Place.objects.select_for_update().get(id=place_id)
+            place.statut = new_statut
+            place.save()
+
+            if place.id_sensor:
+                if new_statut == 'libre':
+                    send_command(f"FREE_{place.id_sensor.id}")
+                else:
+                    send_command(f"RESERVE_{place.id_sensor.id}")
+
+            return Response({"id": place.id, "statut": place.statut}, status=status.HTTP_200_OK)
+    except Place.DoesNotExist:
+        return Response({"error": "Place not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_clear_place_reservation(request):
+    """ Admin override: cancel any active reservation on a given place and free it """
+    place_id = request.data.get('place_id')
+    if not place_id:
+        return Response({"error": "place_id required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with db_transaction.atomic():
+            place = Place.objects.select_for_update().get(id=place_id)
+            cancelled = Reservation.objects.filter(place_id=place, statut='active').update(statut='annulee')
+
+            place.statut = 'libre'
+            place.save()
+            if place.id_sensor:
+                send_command(f"FREE_{place.id_sensor.id}")
+
+            notify_queue()
+            return Response({"cancelled_reservations": cancelled, "place_id": place.id}, status=status.HTTP_200_OK)
+    except Place.DoesNotExist:
+        return Response({"error": "Place not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_toggle_sensor(request):
+    """ Admin override: flip a sensor between actif and defaillant """
+    sensor_id = request.data.get('sensor_id')
+    if not sensor_id:
+        return Response({"error": "sensor_id required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        sensor = Sensor.objects.get(id=sensor_id)
+        sensor.statut = 'defaillant' if sensor.statut == 'actif' else 'actif'
+        sensor.save()
+        return Response({"id": sensor.id, "statut": sensor.statut}, status=status.HTTP_200_OK)
+    except Sensor.DoesNotExist:
+        return Response({"error": "Sensor not found"}, status=status.HTTP_404_NOT_FOUND)
 

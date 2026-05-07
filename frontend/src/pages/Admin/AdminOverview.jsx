@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Stat, LegendDot, ParkingLot } from '../../components/Shared.jsx';
+import { Stat } from '../../components/Shared.jsx';
+
+const API_URL = 'http://127.0.0.1:8000/api';
 
 export default function AdminOverview({ spots, CURRENCY }) {
-  const total = spots.length || 1;
-  const free = spots.filter(s => s.status === 'free').length;
-  const occupied = spots.filter(s => s.status === 'occupied').length;
-  const reserved = spots.filter(s => s.status === 'reserved').length;
-  const occupancy = Math.round(((occupied + reserved) / total) * 100);
-  
-  const [revenue, setRevenue] = useState(0);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/stats/')
-      .then(r => r.json())
-      .then(data => setRevenue(data.revenue || 0))
-      .catch(e => console.error(e));
+    let mounted = true;
+    const fetchStats = () => {
+      fetch(`${API_URL}/stats/`)
+        .then(r => r.json())
+        .then(data => { if (mounted) setStats(data); })
+        .catch(e => console.error(e));
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 3000);
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
+
+  const total = stats?.total_places ?? (spots.length || 1);
+  const free = stats?.free_places ?? spots.filter(s => s.status === 'free').length;
+  const occupied = stats?.occupations ?? spots.filter(s => s.status === 'occupied').length;
+  const reserved = stats?.reserved ?? spots.filter(s => s.status === 'reserved').length;
+  const occupancy = stats?.occupancy_rate ?? Math.round(((occupied + reserved) / total) * 100);
+  const revenue = stats?.revenue ?? 0;
+  const revenueWeek = stats?.revenue_week ?? 0;
+  const activeReservations = stats?.active_reservations ?? 0;
+  const queueLength = stats?.queue_length ?? 0;
 
   return (
     <>
@@ -23,7 +35,14 @@ export default function AdminOverview({ spots, CURRENCY }) {
         <Stat label="Taux d'occupation" value={`${occupancy}%`} color="blue" />
         <Stat label="Places libres" value={free} color="green" />
         <Stat label="Places occupées" value={occupied} color="amber" />
-        <Stat label="Revenus (semaine)" value={`${revenue} ${CURRENCY}`} color="green" />
+        <Stat label="Revenus (semaine)" value={`${Number(revenueWeek).toFixed(2)} ${CURRENCY}`} color="green" />
+      </div>
+
+      <div className="stat-grid" style={{ marginBottom: 24 }}>
+        <Stat label="Réservations actives" value={activeReservations} color="blue" />
+        <Stat label="File d'attente" value={queueLength} color="amber" />
+        <Stat label="Revenus (total)" value={`${Number(revenue).toFixed(2)} ${CURRENCY}`} color="green" />
+        <Stat label="Places réservées" value={reserved} color="amber" />
       </div>
 
       <div className="card">

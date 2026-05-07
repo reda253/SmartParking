@@ -21,4 +21,10 @@ urlpatterns = [
 
     # Dashboard Stats
     path('stats/', views.get_stats, name='get_stats'),
+
+    # Admin dashboard
+    path('users/', views.list_users, name='list_users'),
+    path('admin/force_status/', views.admin_force_place_status, name='admin_force_place_status'),
+    path('admin/clear_reservation/', views.admin_clear_place_reservation, name='admin_clear_place_reservation'),
+    path('admin/toggle_sensor/', views.admin_toggle_sensor, name='admin_toggle_sensor'),
 ]
